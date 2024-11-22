@@ -1,1 +1,2817 @@
+# 数据语言
+###### **数据查询语言DQL（Data Query Language）**
+作用：查询表中的字段
+命令：   select   查询
+select 语法：
+```mysql
+SELECT         select_list
+
+[ INTO             new_table ]
+
+FROM             table_source
+
+[ WHERE        search_condition ]
+
+[ GROUPBY   group_by_expression ]
+
+[ HAVING        search_condition ]
+
+[ ORDERBY    order_expression [ ASC | DESC ] ]
+```
+###### **数据操纵语言DML（data manipulation language）**
+作用：对数据库的数据进行相关操作（对表中的记录进行操作）
+命令：
+delete       删除表中一条或多条记录
+update     更改表中记录
+insert       向表中添加记录
+```mysql
+#delete 语法：   
+DELETE    FROM    表名      WHERE       列名 = 值
+#update 语法：     
+UPDATE    表名     SET     列名 = 新值       WHERE       列名称 = 某值
+#insert 语法：   
+INSERT      INTO      表名（列1，列2，...）     VALUES    （值1，值1，...）
+```
+###### **数据定义语言DDL（data definition language）**
+作用：在定义或改变表（TABLE）的结构，数据类型，表之间的链接和约束等初始化工作上，他们大多在建立表时使用 （对表进行操作，不涉及记录）
+命令：     
+create       建立表
+alter          修改表中字段（增加列，更改列，删除列）
+drop          删除表（删除表结构和记录）
+truncate    删除表（删除记录，保留表结构）
+```mysql
+#create 语法：
+CREATE       table         表名
+#alter 语法：
+ALTER       table       表名
+ADD           (test_id    number)           --增加列
+-- ----------------------------------------------------------------------------
+ALTER       table       表名
+MODIFY     (test_id    number)          --更改列
+-- ----------------------------------------------------------------------------
+ALTER       table       表名
+DELETE     (test_id  )                         --删除列
+#drop 语法：
+DROP             table         表名
+# truncate 语法：
+TRUNCATE     table        表名
+```
+###### **数据控制语言DCL（Data Control Language）**
+作用： 数据控制语言DCL用来设置或更改数据库用户或角色权限
+命令： 
+grant       授权: 该命令用于授予用户对数据库对象（例如表格）的访问权限。
+revoke    撤回授权：该命令用于撤回已经授予用户的某些权限。
+注意： 在默认状态下，只有sysadmin,dbcreator,db_owner或db_securityadmin等人员才有权力执行DCL。
+```mysql
+GRANT SELECT, INSERT, UPDATE ON Students TO user1;
+REVOKE UPDATE ON Students FROM user1;
+```
+###### **事务控制语言TCL（Transaction Control Language）**
+命令：COMMIT            提交
+ROLLBACK                   回滚
+SAVEPOINT                  在事务中设置保存点，可以回滚到此处
+SET TRANSACTION     改变事务选项
+```mysql
+INSERT INTO Students (ID, Name, Age) VALUES (1, 'Tom', 18);
+COMMIT;  -- 提交事务，将插入的数据保存到数据库中
+
+INSERT INTO Students (ID, Name, Age) VALUES (1, 'Tom', 18);
+ROLLBACK;  -- 回滚事务，撤销上一条插入命令
+
+SAVEPOINT SP1;  -- 创建保存点 SP1
+INSERT INTO Students (ID, Name, Age) VALUES (1, 'Tom', 18);
+ROLLBACK TO SP1;  -- 回滚至保存点 SP1，不会撤销保存点后的操作
+
+```
+#### 元数据锁(meta data lock, MDL)
+MDL加锁过程是系统自动控制,无需显式使用,在访问一张表的时候会自动加上。MDL锁主要作用是维护表元数据的数据一致性,在表
+上有活动事务的时候,不可以对元数据进行写入操作。为了避免DML与DDL冲突,保证读写的正确性。
+在MySQL5.5中引入了MDL,当对一张表进行增删改查的时候,加MDL读锁(共享);当对表结构进行变更操作的时候,加MDL写锁(排他)。
+![[Pasted image 20240728132651.png]]
+查看元数据锁:
+```mysql
+select object_type,object_schema,object_name,lock_tye,lock_duration from performance_schema.metadata_locks ;
+```
+# 函数
+## 字符串函数
+
+| 函数                       | 功能                               |
+| ------------------------ | -------------------------------- |
+| CONCAT(S1,S2.Sn)         | 字符串拼接，将S1，S2,Sn拼接成一个字符串          |
+| LOWER(str)               | 将字符串str全部转为小写                    |
+| UPPER(str)               | 将字符串str全部转为大写                    |
+| LPAD(str,n,pad)          | 左填充，用字符串pad对str的左边进行填充，达到n个字符串长度 |
+| RPAD(str,n,pad)          | 右填充，用字符串pad对str的右边进行填充，达到n个字符串长度 |
+| TRIM(str)                | 去掉字符串头部和尾部的空格                    |
+| SUBSTRING(str,start,len) | 返回从字符串str从start位置起的len个长度的字符串    |
+
+
+##### -- 函数演示
+-- concat
+```mysql
+select concat('hello','mysql','hello','xukur');
+```
+
+-- lower
+```mysql
+select lower('HELLO XUKUR');
+```
+
+-- upper
+```mysql
+select upper('hello mysql');
+```
+
+-- lpad
+```mysql
+select lpad('1',4,'0');
+```
+
+-- rpad
+```mysql
+select rpad('1',5,'0');
+```
+
+-- trim
+```mysql
+select trim(' hello xukur ');
+```
+
+-- substring
+```mysql
+select substring('hello xukur',3,5);
+```
+
+## 计算函数
+/*
+
+|     函数     |         功能         |
+| :--------: | :----------------: |
+|  CEIL(x)   |        向上取整        |
+|  FLOOR(x)  |        向下取整        |
+|  MOD(x,y)  |      返回x/y的模       |
+|   RAND()   |    返回0~10内的随机数     |
+| ROUND(x,y) | 求参数x的四舍五入的值，保留y位小数 |
+
+
+-- ceil
+```mysql
+select ceil(2.5);
+```
+
+
+-- floor
+```mysql
+select floor(2.6);
+```
+
+-- mod
+```mysql
+select mod(10,4);
+```
+
+-- ran
+```mysql
+select rand();
+```
+
+-- round
+```mysql
+select round(4.57986,3);
+```
+
+## 日期函数
+
+|                 函数                 |             功能              |
+| :--------------------------------: | :-------------------------: |
+|             CURDATE()              |           返回当前日期            |
+|             CURTIME()              |           返回当前时间            |
+|               NOW()                |          返回当前日期和时间          |
+|             YEAR(date)             |         获取指定date的年份         |
+|            MONTH(date)             |         获取指定date的月份         |
+|             DAY(date)              |         获取指定date的日期         |
+| DATE_ADD(date, INTERVAL expr type) | 返回一个日期/时间值加上一个时间间隔expr后的时间值 |
+|       DATEDIFF(date1,date2)        | 返回起始时间date1和结束时间date2之间的天数  |
+
+
+*/
+#### 演示
+-- curdate
+```mysql
+select curdate();
+```
+
+-- curtime
+```mysql
+select curtime();
+```
+
+-- now
+```mysql
+select now();
+```
+
+-- year
+```mysql
+select year(20230708);
+```
+
+-- DAY(date)
+```mysql
+select DAY(20230708);
+```
+
+-- MONTH(date)
+```mysql
+select MONTH(20230708);
+```
+
+```mysql
+```
+-- DATE_ADD(date, INTERVAL expr type)
+
+```mysql
+select date_add(now(),interval 1000 day);
+```
+-- DATEDIFF(date1,date2)
+```mysql
+select datediff('2021-12-13','2020-12-13');
+```
+
+```sql
+
+-- 1. 由于业务需求变更,企业员工的工号,统一为5位数,目前不足5位数的全部在前面补0。比如: 1号员工的工号应该为00001。
+select lpad('1',5,'0');
+update characters set worknum = lpad(worknum,5,'0');
+-- 2. 通过数据库的函数,生成一个六位数的随机验证码。
+select lpad(round(rand()*1000000,0),6,'0');
+-- 3. 查询所有员工的入职天数,并根据入职天数倒序排序。
+select name,datediff(curdate(),enterydate) as 'enterydays' from characters order by enterydays desc ;
+```
+
+## 流程函数
+流程函数也是很常用的一类函数,可以在SQL语句中实现条件筛选,从而提高语句的效率。
+
+| 函数                                                              | 功能                                    |
+| --------------------------------------------------------------- | ------------------------------------- |
+| IF(value, t, f)                                                 | 如果value为true,则返回t,否则返回f               |
+| IFNULL(value1, value2)                                          | 如果value1不为空,返回value1,否则返回value2       |
+| CASE WHEN [value1 ] THEN [res1] ... ELSE [ default ] END        | 如果val1为true,返回res1,…否则返回default默认值    |
+| CASE [ expr ] WHEN [vall ] THEN [res1] ... ELSE [ default ] END | 如果expr的值等于val1,返回res1,…否则返回default默认值 |
+
+```mysql
+-- if
+select if(true,'direct','error');
+-- ifnull
+select ifnull(null,'default');
+-- case when then else end
+-- 需求:查询emp表的员工姓名和工作地址(北京/上海 -->一线城市,其他-->二线城市)
+select name,workaddress,
+       (case workaddress when '北京' then '一线城市'when '上海' then'一线城市' else('二线城市') end) as '工作地址'
+from characters;
+
+
+
+-- 案例:统计班级各个学员的成绩,展示的规则如下:
+-- -->= 85,展示优秀
+-- -->= 60,展示及格
+-- 否则,展示不及格
+
+
+create table score
+(
+    id      int comment 'ID',
+    name    varchar(20) comment '姓名',
+    math    int comment '数学',
+    english int comment '英语',
+    chinese int comment '语文'
+)comment '学员成绩表';
+insert into score(id, name, math, english, chinese) VALUES (1, 'Tom', 67, 88, 95 ), (2, 'Rose' , 23, 66, 90), (3, 'Jack', 56, 98, 76);
+select id,name,math,english,chinese,
+       (case when (math>=85) then '优秀' when (math >=60 and math<85) then '及格' else('不及格') end)'数学',
+       (case when (english>=85) then '优秀' when (english>=60 and english<85) then '及格'else('不及格') end)'英语',
+       (case when (chinese>=85) then '优秀' when (chinese >=60 and chinese<85) then '及格' else('不及格') end)'语文'
+
+from score;
+case (math,english,chinese) when (math,english,chinese)>=85 then '优秀' when ((math,english,chinese) >=60 and (math,english,chinese)<85) then '及格'
+```
+
+# 约束
+## 条件约束
+### 概念:
+约束是作用于表中字段上的规则,用于限制存储在表中的数据。
+### 目的:
+保证数据库中数据的正确、有效性和完整性。
+### 分类:
+
+|        约束        |     关键字     |           描述            |
+| :--------------: | :---------: | :---------------------: |
+|       非空约束       |  NOT NULL   |     限制该字段的数据不能为null     |
+|       唯一约束       |   UNIQUE    |   保证该字段的所有数据都是唯一、不重复的   |
+|       主键约束       | PRIMARY KEY |  主键是一行数据的唯一标识,要求非空且唯一   |
+|       默认约束       |   DEFAULT   | 保存数据时,如果未指定该字段的值,则采用默认值 |
+| 检查约束(8.0.16版本之后) |    CHECK    |      保证字段值满足某一个条件       |
+
+## 外键约束
+### 删除/更新行为
+
+|     行为      |                       说明                       |                  规则                  |
+| :---------: | :--------------------------------------------: | :----------------------------------: |
+|  NO ACTION  |          当在父表中删除/更新对应记录时,首先检查该记录是否有对应          |    外键,如果有则不 允许删除/更新。(与RESTRICT一致)    |
+|  RESTRICT   |          当在父表中删除/更新对应记录时,首先检查该记录是否有对应          |    外键,如果有则不允许删除/更新。(与NO ACTION一致)    |
+|   CASCADE   |          当在父表中删除/更新对应记录时,首先检查该记录是否有对应          |       外键,如果有,则也删除/更新外键在子表中的记录。       |
+|  SET NULL   |           当在父表中删除对应记录时,首先检查该记录是否有对应            | 外键,如果有则设置子表中该外键值为null(要求该外键允许取null)。 |
+| SET DEFAULT |        父表有变更时,子表将外键列设置成一默认的值(Innodb不支持)        |                                      |
+| ALTER TABLE |    表名 ADD CONSTRAINT 外键名称 FOREIGN KEY(外键字段)    |                                      |
+| REFERENCES  | 主表名(主表字段名)ON UPDATE CASCADE ON DELETE CASCADE; |                                      |
+
+```mysql
+
+create table userinfo  (
+    id int primary key auto_increment,
+    name varchar(10)  not null unique,
+    age int check (age>0 && age<=120),
+    status char(1) default '1',
+    gender char(1)
+);
+
+insert into userinfo(name,age,status,gender)values('Tom',20,'1','男'),('Rose',18,'0','女'),('jack',19,'1','男');
+insert into userinfo(name,age,status,gender)values('Tomy',20,'1','男');
+insert into userinfo(name,age,status,gender)values('Roser',20,'0','女');
+insert into userinfo(name,age,status,gender)values('Toms',-1,'1','男');
+
+
+
+```
+#### 多对多关系在数据库表中的实现
+```mysql
+
+create table student(
+id int auto_increment primary key comment 'tID',
+name varchar(10) comment '姓名',
+no varchar(10) comment '学号'
+)comment'学生表';
+
+insert into student values (null,'黛绮丝','2000100101'),(null,'谢逊','2000100102'),(null,'殷天正','2000100103'),(null,'韦一笑','2000100103');
+
+create table course(
+id int auto_increment primary key comment '主键ID',
+name varchar(10) comment '课程名称'
+)comment'课程表';
+insert into course values (null, 'Java'), (null, 'PHP'), (null , 'MySQL') , (null, 'Hadoop');
+
+create table student_course(
+    id int auto_increment comment'编号' primary key ,
+    studentid int not null comment'学生编号',
+    courseid int not null comment '课程编号',
+    constraint fk_courseid foreign key(courseid)references course(id),
+    constraint fk_studenid foreign key(studentid)references student(id)
+)comment'学生课程中间表';
+insert into student_course values (null, 1, 1), (null, 1, 2), (null, 1, 3), (null, 2, 2), (null, 2, 3), (null, 3,4);
+```
+#### 一对一的关系
+```mysql
+
+create table tb_user(
+    id int auto_increment primary key,
+    name char(10),
+    age int,
+    gender char(2),
+    phone char(11)
+);
+create table tb_user_edu(
+    id int auto_increment primary key,
+    degree varchar(20),
+    major varchar(50),
+    primaryschool varchar(50),
+    middlescholl varchar(50),
+    university varchar(50),
+    userid int unique,
+    constraint fk_userid foreign key(userid)references tb_user(id)
+);
+
+insert into tb_user(id, name, age, gender, phone) values
+(null,'黄渤',45,'1','18880001111'),
+(null,'冰冰',35,'2','18800002222'),
+(null,'码云',55,'1','18800008888'),
+(null,'李彦宏',50, '1', '18800089999');
+
+insert into tb_user_edu(id, degree, major, primaryschool, middlescholl, university, userid) values
+(null,'本科' ,'舞蹈' ,'静安区第一小学' ,'静安区第一中学' ,'北京舞蹈学院' , 1),
+(null,'硕士' ,'表演' ,'朝阳区第一小学' ,'朝阳区第一中学' ,'北京电影学院' ,2),
+(null,'本科','英语' ,'杭州市第一小学' , '杭州市第一中学' , '杭州师范大学' , 3),
+(null,'本科' ,'应用数学' ,'阳泉第一小学' ,'阳泉区第一中学' ,'清华大学' , 4);
+
+
+
+create table emp (
+id int auto_increment primary key ,
+name char(20) unique ,
+age tinyint(10),
+job varchar(20) comment'职位',
+salary int comment '薪资',
+entrydate date comment '入职时间',
+managerid int comment '直属领导ID',
+dept_id int comment'部门ID'
+)comment '员工表';
+INSERT INTO emp (id, name, age, job, salary, entrydate, managerid, dept_id) VALUES
+(1,'金庸',66,'总裁',20000,'2000-01-01',null,5),
+(2,'张无忌',20,'项目经理',12500,'2005-12-05',1,1),
+(3,'杨逍',33,'开发',8400,'2000-11-03',2,1),
+(4,'韦一笑',48,'开发',11000,'2002-02-05',2,1),
+(5,'常遇春',43,'开发',10500,'2004-09-07',3,1),
+(6,'小昭',19,'程序员鼓励师',6600,'2004-10-12',2,1),
+(7,'灭绝',60,'财务总监',8500,'2004-01-01',1,3),
+(8,'周芷若',19,'会计',48000,'2003-02-01',7,3),
+(9,'丁敏君',23,'出纳',5200,'2005-10-12',7,3),
+(10,'赵敏',20,' 市场部总监',12500,'2006-06-01',1,2),
+(11,'鹿杖客',56,' 职员',3750,'2006-06-06',10,2),
+(12,'鹤笔翁',19,'职员',3750,'2004-02-01',10,2),
+(13,'方东白',19,'职员',5500,'2004-02-01',10,2),
+(14,'张三丰',88,'销售总监',14000,'2004-02-01',1,4),
+(15,'俞莲舟',38,'销售',4600,'2004-02-01',14,4),
+(16,'宋远桥',40,'销售',4600,'2004-02-01',14,4),
+(17,'陈友谅',42,null,2000,'2000-10-12',1,null);
+
+
+create table dept (
+id int  primary key ,
+name char(20) unique
+);
+insert into dept(id, name)
+VALUES (1,'研发部'),
+       (2,'市场部'),
+       (3,'财务部'),
+       (4,'销售部'),
+       (5,'总经办'),
+       (6,'人事部');
+
+
+create table salgrade(
+grade int,
+losal int,
+hisal int
+
+)comment '薪资等级表';
+
+insert into salgrade values (1,0,3000);
+insert into salgrade values (2,3001,5000);
+insert into salgrade values (3,5001,8000);
+insert into salgrade values (4,8001,10000);
+insert into salgrade values (5,10001,15000);
+insert into salgrade values (6,15001, 20000);
+insert into salgrade values (7,20001, 25000);
+insert into salgrade values (8,25001, 30000);
+```
+
+-- 1. 查询员工的姓名、年龄、职位、部门信息 (隐式内连接)
+```sql
+select*from emp,dept;
+```
+
+
+
+
+### -- 添加外键
+```mysql
+
+ alter table emp add constraint fk_emp_dept_id foreign key (dept_id) references dept(id);
+ ```
+### -- 删除外键
+```mysql
+
+alter table emp drop foreign key fk_emp_dept_id;
+-- 删除外键和更新行为
+-- ALTER TABLE 表名 ADD CONSTRAINT 外键名称 FOREIGN KEY(外键字段)REFERENCES 主表名(主表字段名)ON UPDATE CASCADE ON DELETE CASCADE;
+alter table emp add constraint fk_emp_dept_id foreign key (dept_id)references dept(id) on update cascade on delete cascade;
+alter table emp add constraint fk_emp_dept_id foreign key (dept_id)references dept(id) on update set null on delete set null;
+
+```
+# 多表查询
+## 内连接：
+两张表中交集的部分
+### 隐式内连接
+ SELECT 字段列表 FROM 表1,表2 WHERE 条件 …;
+### 显式内连接
+ SELECT 字段列表 FROM 表1[INNER] JOIN表2 ON 连接条件 ...;
+
+#### -- 内连接演示
+-- 1. 查询每一个员工的姓名 ,以及关联的部门的名称(隐式内连接实现)
+```mysql
+select*from emp,dept where dept.id = emp.dept_id;
+```
+
+-- 2. 查询每一个员工的姓名,以及关联的部门的名称(显式内连接实现)
+```mysql
+select*from emp join dept on dept.id = emp.dept_id;
+```
+
+
+## 外连接
+
+连接查询-外连接
+
+外连接查询语法:
+### 左外连接
+SELECT 字段列表 FROM 表1 LEFT [OUTER] JOIN表2ON 条件 ...;
+相当于查询表1(左表)的所有数据 包含 表1和表2交集部分的数据
+### 右外连接
+SELECT 字段列表 FROM 表1 RIGHT [OUTER] JOIN表2 ON 条件 ..;
+相当于查询表2(右表)的所有数据 包含 表1和表2交集部分的数据
+ */
+-- 外连接演示
+```sql
+
+-- 1. 查询emp表的所有数据,和对应的部门信息(左外连接)
+select e.*,d.name from emp e left join dept d on e.dept_id = d.id;
+
+
+-- 2. 查询dept表的所有数据,和对应的员工信息(右外连接)
+select d.*,e.* from emp  e right join dept d on  e.dept_id=d.id ;
+```
+/*
+## 连接查询-自连接
+自连接查询语法:
+SELECT 字段列表 FROM 表A 别名A JOIN 表A 别名B ON 条件 ...;
+自连接查询,可以是内连接查询,也可以是外连接查询。
+
+### 自连接
+-- 1. 查询员工 及其 所属领导的名字
+```sql
+select a.name, b.name from emp a join emp b  on a.managerid=b.id;
+-- 2. 查询所有员工 emp 及其领导的名字 emp,如果员工没有领导,也需要查询出来
+select a.name '员工',b.name '领导' from emp a left join emp b on a.managerid=b.id;
+```
+
+### 联合查询-union,union all
+对于union查询,就是把多次查询的结果合并起来,形成一个新的查询结果集。
+SELECT 字段列表 FROM 表A ...
+UNION [ ALL ]
+SELECT 字段列表 FROM 表B ....;
+-- union all 是会把两表的所有数据结合到一起，而union 是会去掉重复的一部分去结合
+
+### 联合查询实践
+-- 1. 将薪资低于 5000 的员工,和 年龄大于 50 岁的员工全部查询出来.
+```sql
+select*from emp where age>50
+union all
+select*from emp where salary<5000;
+select*from emp where age>50
+union
+select*from emp where salary<5000;
+```
+
+/*
+## 子查询
+● 概念:SQL语句中嵌套SELECT语句,称为嵌套查询,又称子查询。
+SELECT * FROM t1 WHERE column1 = (SELECT column1 FROM t2);
+子查询外部的语句可以是INSERT/UPDATE/DELETE/SELECT的任何一个。
+● 根据子查询结果不同,分为:
+ 标量子查询(子查询结果为单个值)
+ 列子查询(子查询结果为一列)
+ 行子查询(子查询结果为一行)
+ 表子查询(子查询结果为多行多列)
+● 根据子查询位置,分为:WHERE之后、FROM之后、SELECT之后。
+*/
+
+### -- 标量子查询
+```sql
+-- 1. 查询 "销售部" 的所有员工信息
+select*from emp where dept_id=(select id from dept where name='销售部');
+-- 2. 查询在“方东白”入职之后的员工信息
+select*from emp where entrydate>(select entrydate from emp where name='方东白');
+```
+/*
+### 列子查询
+子查询返回的结果是一列(可以是多行),这种子查询称为列子查询。
+常用的操作符:IN、NOT IN、ANY、SOME、ALL
+
+| 操作符    | 描述                       |
+| ------ | ------------------------ |
+| IN     | 在指定的集合范围之内,多选一           |
+| NOT IN | 不在指定的集合范围之内              |
+| ANY    | 子查询返回列表中,有任意一个满足即可       |
+| SOME   | 与ANY等同,使用SOME的地方都可以使用ANY |
+| ALL    | 子查询返回列表的所有值都必须满足         |
+
+#### 列子查询实例
+```sql
+-- 1. 查询“销售部”和“市场部”的所有员工信息
+select*from emp where dept_id in (select id from dept where name=  '销售部' or name = '市场部');
+-- 2. 查询比财务部所有人工资都高的员工信息
+select*from emp where salary>all(select salary from emp where dept_id=(select id from dept where name='财务部'));
+-- 3. 查询比研发部其中任意一人工资高的员工信息
+select*from emp where salary>any(select salary from emp where dept_id=(select id from dept where name='研发部'));
+select*from emp where salary>some(select salary from emp where dept_id=(select id from dept where name='研发部'));
+```
+/*
+### 行子查询
+子查询返回的结果是一行(可以是多列),这种子查询称为行子查询。
+常用的操作符: = 、<>、IN、NOT IN
+*/
+
+#### 行子查询实例
+```sql
+-- 1. 查询与“张无忌”的薪资及直属领导相同的员工信息;
+select*from emp where (salary,managerid) = (select salary,managerid from emp where name='张无忌');
+```
+### 表子查询
+```sql
+-- 1. 查询与“鹿杖客”,“宋远桥”的职位和薪资相同的员工信息
+
+select*from emp where(salary,job) in (select salary,job from emp where name='鹿杖客'or name='宋远桥');
+
+-- 2. 查询入职日期是“2006-01-01”之后的员工信息,及其部门信息
+select e.*,d.* from (select*from emp where entrydate>'2006-01-01') e left join dept d on e.dept_id =d.id;
+```
+
+
+```sql
+-- 1. 查询员工的姓名、年龄、职位、部门信息。(隐式内连接)
+select e.name,e.age,e.job,d.name,d.id from emp e,dept d where e.dept_id=d.id;
+
+-- 2.查询年龄小于30岁的员工姓名、年龄、职位、部门信息。(显式内连接)
+select e.name,e.age,e.job,d.name from emp e join dept d  on d.id = e.dept_id and e.age<30;
+-- 3. 查询拥有员工的部门ID、部门名称。
+select distinct  d.name,d.id from emp e join dept d  on d.id = e.dept_id;
+-- 4. 查询所有年龄大于40岁的员工,及其归属的部门名称;如果员工没有分配部门,也需要展示出来。
+select  e.*,d.name from emp e left join dept d on d.id= e.dept_id where age>40;
+-- 5. 查询所有员工的工资等级。
+select e.*,s.* from emp e , salgrade s where (e.salary >= s.losal and e.salary<=s.hisal);
+select e.*,s.* from emp e , salgrade s where (e.salary between s.losal and s.hisal);
+-- 6. 查询“研发部”所有员工的信息及工资等级。
+select e.*,s.*,d.name from emp e ,salgrade s ,dept d where (e.salary between s.losal and s.hisal )and (e.dept_id=d.id)and (d.name='研发部');
+-- 7. 查询“研发部”员工的平均工资。
+select avg(e.salary) from emp e,dept d where (e.dept_id=d.id)and(d.name='研发部')  ;
+-- 8. 查询工资比“灭绝”高的员工信息。
+select*from emp where(salary) >(select salary from emp where name='灭绝');
+-- 9. 查询比平均薪资高的员工信息。
+select*from emp where(salary)>(select avg(e.salary)from emp e);
+select avg(e.salary)from emp e;
+-- 10. 查询低于本部门平均工资的员工信息。
+select*,(select avg(e1.salary)from emp e1 where (e1.dept_id=e2.dept_id))from emp e2 where(e2.salary)<(select avg(e1.salary)from emp e1 where (e1.dept_id=e2.dept_id));
+
+-- 11. 查询所有的部门信息,并统计部门的员工人数。
+select dept.id ,dept.name ,( count(e.id)  ) '人数' from dept left join emp e on dept.id = e.dept_id group by dept.id, dept.name;
+
+#SELECT id, name, (SELECT COUNT(*) FROM emp WHERE dept_id = id) AS '人数' FROM dept;错误❌
+-- 12. 查询所有学生的选课情况,展示出学生名称,学号,课程名称
+select*from student;
+```
+
+
+
+
+
+
+-- 作业
+```sql
+
+create table teacher (
+    tno char(10) primary key,
+    tn varchar(20) unique comment'姓名',
+    sex char(2) comment '性别' ,
+    age int comment'年龄',
+    prof char(10) comment '职称',
+    sal  int comment'工资',
+    comm int comment '岗位津贴',
+    dept char(20) comment '系别'
+);
+insert into teacher(tno, tn, sex, age, prof, sal, comm, dept)
+values  ('t1','李力','男',47,'教授',1500,3000,'计算机'),
+        ('t2','王平','女',28,'讲师',800,1200,'信息'),
+        ('t3','刘伟','男',30,'讲师',900,1200,'计算机'),
+        ('t4','张雪','女',51,'教授',1600,3000,'自动化'),
+        ('t5','张兰','女',39,'副教授',1300,2000,'信息');
+
+
+create table students(
+    sno char(10) primary key,
+    sn varchar(20) unique comment'姓名',
+    sex char(2) comment '性别' ,
+    age int comment'年龄',
+    dept char(20) comment '系别'
+);
+insert into students(sno, sn, sex, age, dept)
+values  ('s1','赵亦','女',17,'计算机'),
+        ('s2','钱尔','男',18,'信息'),
+        ('s3','孙珊','女',20,'自动化'),
+        ('s4','李思','男',21,'自动化'),
+        ('s5','周武','男',19,'计算机'),
+        ('s6','吴丽','女',20,'信息');
+create table courses(
+    cno char(10) primary key,
+    cn varchar(20) unique comment'课程名',
+    ct int comment'课程'
+);
+insert into courses(cno, cn, ct)
+values  ('c1','程序设计',60),
+        ('c2','微机原理',80),
+        ('c3','数字逻辑',60),
+        ('c4','数据结构',80),
+        ('c5','数据库',60),
+        ('c6','编译原理',60),
+        ('c7','操作系统',60);
+create table sc(
+    sc_id int auto_increment primary key ,
+    snos char(10) ,
+    cnos char(10) ,
+    scores int,
+ constraint fk_sno foreign key(snos)references students(sno),
+ constraint fk_cno foreign key(cnos)references courses(cno));
+insert into sc(snos,cnos, scores)
+values
+    ('s1','c1',90),
+    ('s1','c2',85),
+    ('s2','c5',57),
+    ('s2','c6',80),
+    ('s2','c7',null),
+    ('s2','c4',70),
+    ('s3','c1',75),
+    ('s3','c2',70),
+    ('s3','c4',85),
+    ('s4','c1',93),
+    ('s4','c2',85),
+    ('s4','c3',83),
+    ('s5','c2',89);
+create table tc(
+    tnos char(10),
+    cnos char(10),
+    constraint fk_tnos foreign key(tnos)references teacher(tno),
+    constraint fk_snos foreign key(cnos)references courses(cno)
+    );
+insert into tc(tnos, cnos)
+VALUES ('t1','c1'),
+       ('t1','c4'),
+       ('t2','c5'),
+       ('t3','c1'),
+       ('t3','c5'),
+        ('t4','c2'),
+        ('t4','c3'),
+        ('t5','c5'),
+        ('t5','c7');
+-- （1）	查询年龄大于35岁的男老师的教师号、姓名及职称。
+select tno,tn, prof from teacher where age>35 and sex='男';
+--  (2)查询教师“王平”所教课程的课程号和课程名称。
+select*from teacher where tn='王平';
+SELECT c.cno, c.cn FROM courses c JOIN tc ON c.cno = tc.cnos JOIN teacher t ON t.tno = tc.tnos WHERE t.tn = '王平';
+```
+
+```MySQL
+
+create table R(
+    a int ,
+    b int ,
+    c int
+);
+insert into R(a, b, c)
+VALUES
+        (1,2,3),
+        (2,2,2),
+        (5,2,6);
+create table S(
+    a int ,
+    b int ,
+    c int
+);
+insert into S(a, b, c)
+VALUES
+        (3,2,1),
+        (2,1,3),
+        (5,2,6);
+create table T(
+    a int ,
+    d int
+);
+insert into T(a, d)
+VALUES
+        (1,3),
+        (2,2),
+        (3,1);
+
+```
+
+
+## 条件查询
+
+
+### RuS
+这个查询 RuS 的目的是找出表 R 和表 S 中满足特定条件的行，并将它们合并在一起。
+
+```sql
+SELECT * FROM R WHERE (a, b, c) IN ((3, 2, 1), (2, 1, 3), (5, 2, 6))
+UNION
+SELECT * FROM S WHERE (a, b, c) IN ((3, 2, 1), (2, 1, 3), (5, 2, 6));
+#### -- R∩S
+```
+
+```sql
+-- 这个查询是一个内连接（INNER JOIN），目的是找出表 R 和表 S 中满足特定条件的行，并返回表 R 中的所有列。
+SELECT R.* FROM R INNER JOIN S ON R.a = S.a AND R.b = S.b AND R.c = S.c;
+```
+
+### R-S 
+这个查询是一个左连接（LEFT JOIN），目的是找出表 R 中存在但在表 S 中不存在的行，并返回表 R 中的所有列。
+```sql
+
+SELECT R.*FROM R
+LEFT JOIN S ON R.a = S.a AND R.b = S.b AND R.c = S.c
+WHERE S.a IS NULL;
+
+```
+
+
+
+### RxS
+-- 这个查询是一个交叉连接（CROSS JOIN），也称为笛卡尔积，目的是返回表 R 和表 S 中所有行的组合。
+```sql
+SELECT *
+FROM R
+CROSS JOIN S;
+```
+交叉连接会返回两个表中所有行的组合，即每一行与另一个表中的所有行进行组合。
+在这个查询中，表 R 中有3行，表 S 中有3行，因此结果中共有3x3=9行。
+每一行都包含了表 R 和表 S 中对应行的所有列。
+例如，第一行表示表 R 中的第一行 (1, 2, 3) 与表 S 中的第一行 (3, 2, 1) 的组合。
+
+
+
+### R ⋈T
+-- R ⋈ T 表示表 R 和表 T 的自然连接，自然连接是基于两个表中具有相同值的列进行连接。
+```mysql
+SELECT *
+FROM R
+NATURAL JOIN T;
+
+-- ΠA,B(σC=6(R))
+-- ΠA,B(σC=6(R)) 表示对表 R 中满足条件 C=6 的行进行投影，只保留列 A 和 B
+SELECT DISTINCT R.a, R.b
+FROM R
+WHERE R.c = 6;
+-- ΠB,C(σC=3(S⋈T))  ΠB,C(σC=3(S⋈T)) 表示对表 S 和表 T 的自然连接结果中满足条件 C=3 的行进行投影，只保留列 B 和 C。
+SELECT DISTINCT S.b, S.c
+FROM S
+JOIN T ON S.a = T.a
+WHERE S.c = 3;
+```
+
+```mysql
+create table rr(
+    a char(5) ,
+    b char(5) ,
+    c char(5),
+    d char(5)
+);
+insert into rr(a, b, c, d)
+values ('a1','b2','c1','d1'),
+       ('a1','b2','c2','d1'),
+       ('a1','b1','c1','d2'),
+       ('a2','b2','c3','d3');
+create table ss(
+    c char(5),
+    d char(5),
+    e char(5)
+);
+insert into ss(c, d, e)
+values ('c1','d1','e1'),
+       ('c2','d2','c2');
+```       
+### R÷S
+-- 这个查询 R ÷ S 的目的是找出表 rr 中有但表 ss 中没有对应记录的行。除运算，即找出在第一个表中存在但在第二个表中不存在的元组。根据具体的数据表结构和需求，选择合适的查询语句来执行除运算。
+/*
+在MySQL中，除运算可以通过不同的查询语句来实现。以下是几种常见的实现方式：
+使用NOT IN子查询：
+```sql
+
+SELECT *
+FROM table1
+WHERE (column1, column2) NOT IN (SELECT column1, column2 FROM table2);
+使用LEFT JOIN和WHERE子句：
+SELECT table1.*
+FROM table1
+LEFT JOIN table2 ON table1.column1 = table2.column1 AND table1.column2 = table2.column2
+WHERE table2.column1 IS NULL AND table2.column2 IS NULL;
+使用NOT EXISTS子查询：
+SELECT *
+FROM table1 t1
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM table2 t2
+    WHERE t1.column1 = t2.column1 AND t1.column2 = t2.column2
+);
+
+*/
+SELECT DISTINCT rr.a, rr.b, rr.c, rr.d
+FROM rr
+LEFT JOIN ss ON rr.c = ss.c AND rr.d = ss.d
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM ss
+    WHERE rr.c = ss.c AND rr.d = ss.d
+);
+
+create table R_r(
+    a1 int ,
+    a2 int,
+    a3 int
+);
+insert into R_r(a1,a2,a3)
+values(1,2,3),
+      (2,1,4),
+      (3,4,4),
+      (4,6,7);
+create table S_s(
+    a1 int,
+    a2 int,
+    a4 int
+);
+insert into S_s(a1,a2,a4)
+values (1,9,1),
+       (2,1,4),
+       (3,4,4),
+       (4,8,3);
+```
+### Π_{a1,a2}(σ_{1<3}(S)))
+```sql
+
+SELECT DISTINCT a1, a2
+FROM (
+    SELECT *
+    FROM S_s
+    WHERE a1 < a4
+) AS S_subset;
+```
+###  R÷（Π_{a1,a2}(σ_{1<3}(S)))
+```sql
+
+SELECT R_r.a1, R_r.a2
+FROM R_r
+LEFT JOIN (
+    SELECT DISTINCT a1, a2
+    FROM S_s
+    WHERE a1 < a4
+) AS S_subset
+ON R_r.a1 = S_subset.a1 AND R_r.a2 = S_subset.a2
+WHERE S_subset.a1 IS NULL;
+--
+SELECT r.*
+FROM r
+LEFT JOIN s ON r.a = s.a AND r.b = s.b
+WHERE s.a IS NULL AND s.b IS NULL;
+
+SELECT *
+FROM r
+WHERE (r.a, r.b,r.c) NOT IN (SELECT s.a, s.b,s.c FROM s);
+
+```
+
+
+
+
+# 事务
+### 事务操作
+### 方式1
+##### 查看/设置事务提交方式
+```mysql
+SELECT @@autocommit ;
+SET @@autocommit=0;
+```
+##### 提交事务
+```mysql
+COMMIT 
+```
+##### 回滚事务
+```mysql
+ROLLBACK ;
+
+select @@autocommit;
+set @@autocommit=1;
+set @@autocommit=0;
+```
+
+
+### 方式2
+##### 开启事务
+```mysql
+START TRANSACTION ;
+-- or
+BEGIN;
+```
+##### 提交事务
+```mysql
+COMMIT;
+```
+##### 回滚事务
+```mysql
+ROLLBACK ;
+```
+
+```mysql
+*/
+start transaction ;
+-- 转账操作
+-- 查询张三账户余额
+
+
+
+select money,name  from account where name='张三';
+select money,name  from account where name='李四';
+
+
+
+-- 如果张三余额大于一千余额要减一千
+
+
+update account set money =money -1000  where name='张三'and money>=1000 ;
+```
+
+
+-- 异常
+```sql
+
+update account set money = money +1000 where name='李四';
+```
+-- 如果操作成功就提交提交事故
+```mysql
+commit ;
+```
+-- 如果失败那就回滚事务
+```mysql
+
+rollback ;
+```
+
+### 事务的四大特性
+#### 原子性(Atomicity):
+事务是不可分割的最小操作单元,要么全部成功,要么全部失败。
+#### 一致性(Consistency):
+事务完成时,必须使所有的数据都保持一致状态。
+####  隔离性(Isolation):
+数据库系统提供的隔离机制,保证事务在不受外部并发操作影响的独立环境下运行。
+#### 持久性(Durability):
+事务一旦提交或回滚,它对数据库中的数据的改变就是永久的。
+```mysql
+
+-- 数据准备
+create table account(
+id int auto_increment primary key comment'主键ID',
+    name varchar(10)comment'姓名',
+money int comment'余额')
+comment'账户表';
+insert into account(id, name, money)VALUES (null,'张三',2000),(null,'李四',2000);
+-- 恢复数据
+update account set money =2000 where name='张三'or name='李四';
+-- 转账操作
+-- 查询张三账户余额
+select money,name  from account where name='张三';
+select money,name  from account where name='李四';
+
+-- 如果张三余额大于一千余额要减一千
+update account set money =money -1000  where name='张三'and money>=1000 ;
+-- 异常
+#error#
+update account set money = money +1000 where name='李四';
+
+```
+
+### 并发事务问题
+
+| 问题    | 描述                                                        |
+| ----- | --------------------------------------------------------- |
+| 脏读    | 一个事务读到另外一个事务还没有提交的数据。                                     |
+| 不可重复读 | 一个事务先后读取同一条记录,但两次读取的数据不同,称之为不可重复读。                        |
+| 不可重复读 | 一个事务按照条件查询数据时,没有对应的数据行,但是在插入数据时,又发现这行数据已经存在,好像出现了"幻影"<br> |
+### 事务隔离级别
+
+|        隔离级别         | 赃读  |         幻读         | 不可重复读 |
+| :-----------------: | :-: | :----------------: | :---: |
+|  Read uncommitted   |  √  |         √          |   √   |
+|   Read committed    |  x  | √             <br> |   √   |
+| Repeatable Read(默认) |  x  |         √          |   √   |
+|    Serializable     |  x  |         x          |   x   |
+
+对为会出现并发问题，错为并发问题不会出现；
+并发级别从上到下依序升高；
+serializable 安全性最高但是性能最差；
+read uncommitted 安全性最差，但是性能最高；
+Repeatable Read(默认) 是数据库中的默认的隔离级别；
+-- 查看事务隔离级别
+```mysql
+SELECT @@TRANSACTION_ISOLATION;
+```
+-- 设置事务隔离级别
+```mysql
+SET [ SESSION | GLOBAL ] TRANSACTION ISOLATION LEVEL { READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ | SERIALIZABLE}
+```
+```mysql
+select @@transaction_isolation;
+set session transaction isolation level REPEATABLE READ;
+
+create database arthur;
+use arthur;
+use xukurs;
+```
+# 存储引擎
+### 连接层
+最上层是一些客户端和链接服务,主要完成一些类似于连接处理、授权认证、及相关的安全方案。服务器也会为安全接入的每个客户
+端验证它所具有的操作权限。
+### 服务层
+第二层架构主要完成大多数的核心服务功能,如SQL接口,并完成缓存的查询,SQL的分析和优化,部分内置函数的执行。所有跨存
+储引擎的功能也在这一层实现,如过程、函数等。
+### 引擎层
+存储引擎真正的负责了MySQL中数据的存储和提取,服务器通过API和存储引擎进行通信。不同的存储引擎具有不同的功能,这样我
+们可以根据自己的需要,来选取合适的存储引擎。
+### 存储层
+主要是将数据存储在文件系统之上,并完成与存储引擎的交互。
+```mysql
+
+show create table account;
+show engines;
+```
+## 存储引擎
+### InnoD
+#### 介绍
+InnoDB是一种兼顾高可靠性和高性能的通用存储引擎,在MySQL 5.5之后,InnoDB是默认的MySQL存储引擎。
+#### 特点
+DML操作遵循ACID模型,支持事务;
+行级锁,提高并发访问性能;
+支持外键FOREIGN KEY约束,保证数据的完整性和正确性;
+#### 文件
+XXX.ibd:xxx代表的是表名,innoDB引擎的每张表都会对应这样一个表空间文件,存储该表的表结构(frm、sdi)、数据和索引。
+参数:innodb_file_per_table
+
+### MyISAM
+#### 介绍
+MylSAM是MySQL早期的默认存储引擎。
+#### 特点
+不支持事务,不支持外键
+支持表锁,不支持行锁
+访问速度
+#### 文件
+xxx.sdi: 存储表结构信息
+XXX.MYD:存储数据
+XXX.MYI:存储索引
+
+
+### Memory
+#### 介绍
+Memory引擎的表数据时存储在内存中的,由于受到硬件问题、或断电问题的影响,只能将这些表作为临时表或缓存使用。
+#### 特点
+#### 内存存放
+hash索引(默认)
+#### 文件
+xxx.sdi: 存储表结构信息
+
+### 存储引擎特点
+
+|    特点    | InnoDB | MyISAM | Memory |
+| :------: | :----: | :----: | :----: |
+|   存储限制   |  64TB  |   有    |   有    |
+|   事务安全   |   支持   |   -    |   -    |
+|   锁机制    |   行锁   |   支持   |   表锁   |
+| B+tree索引 |   支持   |   支持   |   支持   |
+|  Hash索引  |   -    |   -    |   -    |
+|   全文索引   |   -    |   -    |   支持   |
+|   空间使用   |   高    |   高    |  N/A   |
+|   内存使用   |   高    |   低    |   中等   |
+|  批量插入速度  |   低    |   高    |   高    |
+|   支持外键   |   支持   |   -    |   -    |
+
+### 存储引擎选择
+在选择存储引擎时,应该根据应用系统的特点选择合适的存储引擎。对于复杂的应用系统,还可以根据实际情况选择多种存储引擎进行组合。
+#### InnoDB:
+是Mysql的默认存储引擎,支持事务、外键。如果应用对事务的完整性有比较高的要求,在并发条件下要求数据的一致性,数据操作除了插入和查询之外,还包含很多的更新、删除操作,那么InnoDB存储引擎是比较合适的选择。
+#### MylSAM:
+如果应用是以读操作和插入操作为主,只有很少的更新和删除操作,并且对事务的完整性、并发性要求不是很高,那么选择这个存储引擎是非常合适的。
+#### MEMORY:
+将所有数据保存在内存中,访问速度快,通常用于临时表及缓存。MEMORY的缺陷就是对表的大小有限制,太大的表无法缓存在内存中,而且无法保障数据的安全性。
+# 索引
+### 索引结构
+ MySQL的索引是在存储引擎层实现的，不同的存储引警有不同的结构，主要包含以下几种:
+
+|      索引结构       |                     描述                     |
+| :-------------: | :----------------------------------------: |
+|    B+Tree索引     |          最常见的索引类型，大部分引擎都支持 B+树索引           |
+|     Hash索引      |   底层数据结构是用哈希表实现的,只有精确匹配索引列的查询才有效,不支持范围查询   |
+|  R-tree(空间索引)   | 空间索引是MVISAM引擎的一个特殊索引类型，主要用于地理空间数据类型，通常使用较少 |
+| Full-text(全文索引) |  是一种通过建立倒排索引,快速匹配文档的方式。类似于Lucene,Solr,ES   |
+
+### 索引结构与存储引擎
+
+|    索引     |  InnoDB   | MyISAM | Memory |
+| :-------: | :-------: | :----: | :----: |
+| B+tree索引  |    支持     |   支持   |   支持   |
+|  Hash 索引  |    不支持    |  不支持   |   支持   |
+| R-tree 索引 |    不支持    |   支持   |  不支持   |
+| Full-text | 5.6版本之后支持 |   支持   |  不支持   |
+
+
+#### Hash
+Hash索引特点
+Hash索引只能用于对等比较(=,in),不支持范围查询(between,>,<,....)
+无法利用索引完成排序操作
+查询效率高,通常只需要一次检索就可以了,效率通常要高于B+tree索引
+
+
+为什么InnoDB存储引擎选择使用B+tree索引结构?
+相对于二叉树,层级更少,搜索效率高;
+对于B-tree,无论是叶子节点还是非叶子节点,都会保存数据,这样导致一页中存储的键值减少,
+指针跟着减少,要同样保存大量数据,只能增加树的高度,导致性能降低;
+相对Hash索引,B+tree支持范围匹配及排序操作;
+
+
+
+### 索引分类
+
+| 分类   | 含义               | 关键字      | 特点               |
+| ---- | ---------------- | -------- | ---------------- |
+| 主键索引 | 针对于表中主键创建的索引     | PRIMARY  | 默认自动创建,只能有一个     |
+| 唯一索引 | 避免同一个表中某数据列中的值重复 | UNIQUE   | 可以有多个            |
+| 常规索引 | 快速定位特定数据         |          | 可以有多个            |
+| 全文索引 | 查找的是文本中的关键词      | FULLTEXT | 可以有多个，而不是比较索引中的值 |
+
+  
+在InnoDB存储引擎中,根据索引的存储形式,又可以分为以下两种:
+
+| 分类                    | 含义            | 特点                         |
+| --------------------- | ------------- | -------------------------- |
+| 聚集索引(Clustered Index) | 将数据存储与索引放到了一块 | 必须有,而且只有一个。索引结构的叶子节点保存了行数据 |
+| 二级索引(Secondary Index) | 将数据与索引分开存储    | 可以存在多个索引结构的叶子节点关联的是对应的主键	  |
+
+
+#### 聚集索引选取规则:
+如果存在主键,主键索引就是聚集索引。
+如果不存在主键,将使用第一个唯一(UNIQUE)索引作为聚集索引。
+如果表没有主键,或没有合适的唯一索引,则InnoDB会自动生成一个rowid作为隐藏的聚集索引。
+
+
+1. 以下SQL语句,那个执行效率高?为什么?
+```mysql
+select * from user where id = 10;
+select * from user where name ='Arm';
+```
+备注:id为主键,name字段创建的有索引;
+因为id是聚集索引要通过id之下的key值去查询遍历然后找到所需的id的值下的行数据查就可以了；
+若果是name字段查询先要在二级索引下找到指定的name值然后再返回到聚集索引下的id值然后查找行数据；
+显然主键的查询效率较快性能较高。
+
+InnoDB主键索引的B+tree高度为多高呢?
+假设:一行数据大小为1k,一页中可以存储16行这样的数据。InnoDB的指针占用6
+个字节的空间,主键即使为bigint,占用字节数为8。
+
+ex:高度为2:
+n * 8+(n+1) * 6=16*1024,算出n约为 1170
+1171 * 16=18736
+ex:高度为3:
+1171 * 1171 * 16=21939856
+
+### 索引语法
+##### ● 创建索引
+```mysql
+CREATE [ UNIQUE | FULLTEXT ] INDEX index_name ON table_name ( index_col_name, ... ) ;
+```
+##### ● 查看索引
+
+```mysql
+SHOW INDEX FROM table_name ;
+```
+##### ● 删除索引
+```mysql
+DROP INDEX index_name ON table_name ;
+```
+----------------------------------------------------------需求--------------------------------------------------------------------------------
+```mysql
+-- 1. name字段为姓名字段,该字段的值可能会重复,为该字段创建索引。
+create index idx_userinfo_name on user_info(name);
+-- 2. phone手机号字段的值,是非空,且唯一的,为该字段创建唯一索引。
+create unique index idx_userinfo_phone  on user_info(phone);
+-- 3. 为profession、age、status创建联合索引。
+create index idx_userinfo_pro_age_sta on user_info (profession,age,status);
+4. 为email建立合适的索引来提升查询效率。
+create index idx_userinfo_email on user_info (email);
+```
+
+
+### ● SQL执行频率
+MySQL客户端连接成功后,通过show[session|global] status命令可以提供服务器状态信息。通过如下指令,可以查看当前数据库的
+INSERT、UPDATE、DELETE、SELECT的访问频次,(session是当前会话|global是全局的会话);
+```mysql
+
+SHOW GLOBAL STATUS LIKE 'Com______';
+```
+
+#### ●慢查询日志
+慢查询日志记录了所有执行时间超过指定参数(long_query_time,单位:秒,默认10秒)的所有SQL语句的日志。
+MySQL的慢查询日志默认没有开启,需要在MySQL的配置文件(/etc/my.cnf)中配置如下信息:
+```mysql
+show variables like 'slow_query_log';
+```
+开启MySQL慢日志查询开关
+```linux
+slow_query_log=1
+```
+设置慢日志的时间为2秒,SQL语句执行时间超过2秒,就会视为慢查询,记录慢查询日志
+```C
+long_query_time=2
+```
+配置完毕之后,通过以下指令重新启动MySQL服务器进行测试,查看慢日志文件中记录的信息/var/lib/mysql/localhost-slow.log;
+```C
+//MySQL看密码
+sudo cat /etc/mysql/debian.cnf；
+//直接登入MySQL
+mysql -udebian-sys-maint -pUsMlG8ItZtu7JyZx;
+```
+
+
+```mysql
+-- 书写新增 100 万条数据的函数
+SET GLOBAL log_bin_trust_function_creators=TRUE; -- 创建函数一定要写这个
+DELIMITER $$   -- 写函数之前必须要写，该标志
+
+CREATE FUNCTION mock_data()        -- 创建函数（方法）
+RETURNS INT                         -- 返回类型
+BEGIN                                -- 函数方法体开始
+    DECLARE num INT DEFAULT 1000000; -- 定义一个变量num为int类型。默认值为1000000
+    DECLARE i INT DEFAULT 0; 
+
+    WHILE i < num DO                 -- 循环条件
+         INSERT INTO app_user(`name`,`email`,`phone`,`gender`,`password`,`age`) 
+         VALUES(CONCAT('用户',i),'2548928007qq.com',CONCAT('18',FLOOR(RAND() * ((999999999 - 100000000) + 1000000000))),FLOOR(RAND()  *  2),UUID(),FLOOR(RAND()  *  100));
+        SET i =  i + 1;    -- i自增    
+    END WHILE;        -- 循环结束
+    RETURN i;
+END; 
+
+SELECT mock_data(); -- 调用函数
+
+```
+
+```C
+root@xukur-virtual-machine:/home/xukur# cd /var/lib/mysql/
+root@xukur-virtual-machine:/var/lib/mysql# ll
+cat  xukur-virtual-machine-slow.log
+tail -f xukur-virtual-machine-slow.log
+```
+### profile详情
+show profiles 能够在做SQL优化时帮助我们了解时间都耗费到哪里去了。
+```mysql
+show profiles;
+```
+
+```mysql
+-- 通过have_profiling参数,能够看到当前MySQL是否支持profile操作:
+SELECT @@have_profiling ;
+```
+默认profiling是关闭的,可以通过set语句在session/global级别开启profiling:
+```mysql
+SET profiling = 1;
+```
+查看指定query_id的SQL语句各个阶段的耗时情况
+```mysql
+show profile for query query_id;
+```
+查看指定query_id的SQL语句CPU的使用情况
+```mysql
+show profile cpu for query query_id;
+```
+
+
+### ● explain执行计划
+EXPLAIN 或者DESC命令获取MySQL如何执行SELECT语句的信息,包括在SELECT语句执行过程中表如何连接和连接的顺序。
+#### 语法:
+直接在select语句之前加上关键字explain/desc
+```mysql
+EXPLAIN SELECT 字段列表 FROM 表名 WHERE 条件;
+```
+
+EXPLAIN 执行计划各字段含义:
+#### id
+select查询的序列号,表示查询中执行select子句或者是操作表的顺序(id相同,执行顺序从上到下;id不同,值越大,越先执行)。
+#### select_type
+表示SELECT的类型,常见的取值有SIMPLE(简单表,即不使用表连接或者子查询)、PRIMARY(主查询,即外层的查询)、UNION(UNION中的第二个或者后面的查询语句)、SUBQUERY(SELECT/WHERE之后包含了子查询)等
+#### type
+表示连接类型,性能由好到差的连接类型为NULL（一般在业务客户系统中不会出现null这个情况）、system（一般出现在访问系统表示时会出现）、const、eq_ref、ref(非唯一索引）、range、index、all。
+例如：
+```mysql
+explain select 'A';-- 连接类型为NULL，任何表都没有用到。
+explain select id from user_info;-- 连接类型为index性能有点差。
+explain select name from user_info;--连接类型为all性能最差。
+explain select id  from user_info where id ='1';-- 连接类型为const性能好。一般在唯一索引搜索中或者是在主键中才会出现。
+
+```
+#### possible_key
+显示可能应用在这张表上的索引,一个或多个。
+#### Key
+实际使用的索引,如果为NULL,则没有使用索引。
+#### Key_len
+表示索引中使用的学节数,该值为索引字段最大可能长度,并非实际使用长度,在不损失精确性的前提下,长度越短越好。
+#### rows
+MySQL认为必须要执行查询的行数,在innodb引擎的表中,是一个估计值,可能并不总是准确的。
+#### filtered
+表示返回结果的行数占需读取行数的百分比,filtered的值越大越好。
+
+### 索引使用
+#### ● 最左前缀法则
+如果索引了多列(联合索引),要遵守最左前缀法则。最左前缀法则指的是查询从索引的最左列开始,并且不跳过索引中的列。最左边的列一旦不出现他就会失效。如果跳跃某一列,索引将部分失效(后面的字段索引失效)。跟字段放的位置无关
+
+```mysql
+explain select*from user_info where profession='软件工程'and age=31 and status='0';
+explain select*from  user_info where profession='软件工程'and age=31;
+explain select*from  user_info where profession='软件工程';
+explain select * from  user_info where age = 31 and slatus = '0';
+explain select * from  user_info where status = '0';
+```
+explain select * from  user_info where age = 31 and slatus = '0' ;这条语句中的索引失效了因为索引最左边的列没有出现这样它就会全部失效。
+explain select*from user_info where profession='软件工程'and status='0';
+这条语句中的索引部分失效了因为跳过了age字段。
+##### ● 范围查询
+联合索引中,出现范围查询(>,<),范围查询右侧的列索引失效
+例如：
+```mysql
+explain select *from user_info where profession='软件工程' and age>30 and status='0'; -- 后面的status 索引会失效
+explain select*from user_info where profession='软件工程'and age>=30 and status='0';-- 在此表中索引没有失效,因为大于等于范围不会让它失效，尽量在客户需求允许下尽量使用大于等于范围。
+```
+
+
+##### ● 索引列运算
+不要在索引列上进行运算操作,索引将失效。
+例如：
+```mysql
+explain select * from user_info where substring(phone,10,2) = '15';
+```
+使用字符串时不加引号部分会使索引列失效
+例如：
+```mysql
+explain  select* from user_info where substring(phone,17799990001);
+explain  select* from user_info where phone= 17799990001;
+#虽然会出现可能使用到的的索引列（possible_keys）但是索引列依然会失效。
+explain select*from user_info where profession='软件工程'and age=31 and status=0;
+-- 后面的索引列部分失效（status失效了）
+```
+使用模糊查询时如果仅仅是尾部模糊匹配,索引不会失效。如果是头部模糊匹配,索引失效（所以在大数据量的情况下要尽量规避模糊匹配的使用。
+```mysql
+explain select*from user_info where profession like '%工程';
+#头部模糊匹配会使索引全部失效。
+explain select*from user_info where profession like '软件%';
+#尾部模糊匹配不会使索引消失，但是使用的索引列中所查询的那一列会失效（idx_userinfo_pro_age_sta，pro那一部分失效了）。
+explain select*from user_info where profession like '%工%';
+#模糊匹配头尾都用时也会是索引全部失效
+```
+##### ● or连接的条件
+用or分割开的条件,如果or前的条件中的列有索引,而后面的列中没有索引,那么涉及的索引都不会被用到。
+```mysql
+explain select * from user_info where id = 10 or age = 23;
+explain select * from user_info where phone = '17799990017' or age = 23;
+#虽然会出现可能使用到的的索引列（possible_keys中会出现primary），但是索引列依然会失效。
+```
+由于age没有索引,所以即使id、phone有索引,索引也会失效。所以需要针对于age也要建立索引。
+```mysql
+create index  idx_userinfo_age on user_info(age);
+explain select * from user_info where phone = '17799990017' or age = 23;
+#但是建立好针对的索引之后就可以解决这个问题了
+```
+##### ● 数据分布影响
+如果MySQL评估使用索引比全表更慢,则不使用索引。
+```mysql
+select * from tb_user where phone >='17799990005';
+#他不会走索引
+select * from tb_user where phone >='17799990015';
+#它会走索引。
+explain select *from user_info where profession is null;
+#它是会走索引的即使表里没有null值，相当于查询表中的某一个数据所以它会走索引。
+explain select *from user_info where profession is not NULL;
+#它不会走索引，因为对于mysql系统底层来说，已经相当于走全表扫描
+#如果把表中所查询的列设置为null值 相对于这个语句来说（select *from user_info where profession is null;）-- 系统会走全表扫描；相反select *from user_info where profession is not NULL；会走索引。
+```
+综合来说我们查询范围数据时所查询数据占相对全表或者所有表比例较大它走全表扫描，但是数据占比不大时它会走索引。因为走索引比扫描全表更大。
+
+
+### ● SQL提示
+SQL提示,是优化数据库的一个重要手段,简单来说,就是在SQL语句中加入一些人为的提示来达到优化操作的目的。
+###### use index:（建议）
+```mysql
+explain select*from user_info use index(idx_userinfo_pro) where profession='软件工程';
+```
+use idex 对mysql提出一个建议提示，如果指定索引扫描速度快那么它会选则指定索引但是如果在指定索引的扫描速度较慢它会选择更快的索引。
+###### ignore index:（忽略）
+```mysql
+explain select * from tb_user ignore index(idx_userinfo_pro) where profession ='软件工程';
+```
+ignore是对mysql提出一个忽略提示，在这个提示中不会在mysql内部不会进行评估，直接忽略你所指定的索引。
+###### force index:（强制）
+```mysql
+explain select * from tb_user force index(idx_userinfo_pro) where profession='软件工程';
+```
+force index 是强制性的执行你指定的索引。
+
+### 覆盖索引
+尽量使用覆盖索引(查询使用了索引,并且需要返回的列,在该索引中已经全部能够找到),减少select*。
+```mysql
+
+explain select id, profession from user_info where profession = '软件工程' and age = 31 and status = '0';
+
+explain select id,profession,age, status from user_info where profession = '软件工程' and age=31 and status = '0';
+
+explain select id,profession,age, status, name from user_info where profession ='软件工程' and age = 31 and status = '0';
+
+explain select * from user_info where profession = '软件工程' and age = 31 and status = '0';
+```
+###### 知识小贴士:
+using index condition:查找使用了索引,但是需要回表查询数据。它的速度会较慢，回表查询是二次查询也就是它会取到id然后返回表中的聚集索引这一列取到我们想要的数据
+using where; using index:查找使用了索引,但是需要的数据都在索引列中能找到,所以不需要回表查询数据。它的速度会较快
+### ● 前缀索引
+
+当字段类型为字符串(varchar,text等)时,有时候需要索引很长的字符串,这会让索引变得很大,查询时,浪费大量的磁盘IO,影响查询效率。此时可以只将字符串的一部分前缀,建立索引,这样可以大大节约索引空间,从而提高索引效率。
+```mysql
+create index idx_xxxx on table_name(column(n));-- n代表前n个字符
+```
+#### 前缀长度
+可以根据索引的选择性来决定,而选择性是指不重复的索引值(基数)和数据表的记录总数的比值,索引选择性越高则查询效率越高,唯一索引的选择性是1,这是最好的索引选择性,性能也是最好的。
+```mysql
+select count(distinct email) / count(*) from user_info;
+select count(distinct substring(email,1,5)) / count(*) from user_info ;
+```
+
+### 索引使用
+##### 单列索引与联合索引
+单列索引:即一个索引只包含单个列。
+联合索引:即一个索引包含了多个列；单列索引可能会回表查询降低查询性能。
+在业务场景中,如果存在多个查询条件,考虑针对于查询字段建立索引时,建议建立联合索引,而非单列索引。如果我们使用联合索引时使用覆盖索引虽然联合索引是二级索引但是它是不会回表查询，可以提高查询的性能。值得注意的是联合索引的字段顺序，它一定要遵守最左前缀法则。
+
+
+### 索引设计原则
+- 针对于数据量较大,且查询比较频繁的表建立索引。
+- 针对于常作为查询条件(where)、排序(order by)、分组(group by)操作的字段建立索引。
+- 尽量选择区分度高的列作为索引,尽量建立唯一索引,区分度越高,使用索引的效率越高。
+- 如果是字符串类型的字段,字段的长度较长,可以针对于字段的特点,建立前缀索引。
+- 尽量使用联合索引,减少单列索引,查询时,联合索引很多时候可以覆盖索引,节省存储空间,避免回表,提高查询效率。
+- 要控制索引的数量,索引并不是多多益善,索引越多,维护索引结构的代价也就越大,会影响增删改的效率。
+- 如果索引列不能存储NULL值,请在创建表时使用NOT NULL约束它。当优化器知道每列是否包含NULL值时,它可以更好地确定哪个索引最有效地用于查询。
+
+
+
+
+1. 索引概述
+索引是高效获取数据的数据结构。
+2. 索引结构
+ B+Tree
+ Hash
+3. 索引分类
+主键索引、唯一索引、常规索引、全文索引、聚集索引、二级索引。
+3. 索引语法
+```mysql
+create [unique ] index xxx on xxx(xxx);
+show index from xxxx ;
+drop index xxx on xxxx ;
+```
+5. SQL性能分析
+执行频次、慢查询日志、profile、explain
+6. 索引使用
+联合索引
+索引失效
+SQL提示
+覆盖索引
+前缀索引
+单列/联合索引
+7. 索引设计原则
+表
+字段
+索引
+
+### 插入数据
+#### ● insert优化
+
+##### 批量插入
+```mysql
+Insert into tb_test values(1,'Tom'),(2,'Cat'),(3,'Jerry');
+```
+##### 手动提交事务
+```mysql
+start transaction;
+insert into tb_test values(1,'Tom'),(2,'Cat'),(3,'Jerry');
+insert into tb_test values(4,'Tom'),(5,'Cat'),(6,'Jerry');
+insert into tb_test values(7,'Tom'),(8,'Cat'),(9,'Jerry');
+commit;
+```
+##### 主键顺序插入
+###### 主键乱序插入:
+```mysql
+8 1 9 21 88 2 4 15 89 5 7 35 21
+```
+###### 主键顺序插入:
+```mysql
+1 2 3 4 5 7 8 9 15 21 88 89
+```
+
+客户端连接服务端时,加上参数-- loca-infile
+```shell
+mysql -- local-infile -u root -p
+```
+设置全局参数local_infile为1,开启从本地加载文件导入数据的开关
+```mysql
+set global local_infile = 1;
+```
+执行load指令将准备好的数据,加载到表结构中
+```mysql
+load data local infile '/home/xukur/code_learner.sql' into table code_learner fields terminated by ',' lines terminated by '\\n';
+```
+
+```mysql
+create table`code_learner`(
+`id` INT (11) NOT NULL AUTO_INCREMENT,
+`sex` CHAR (1) DEFAULT NULL,
+`learnername`  VARCHAR (50) NOT NULL,
+`name` VARCHAR (20) NOT NULL,
+`birthday` DATE DEFAULT NULL,
+`password` VARCHAR (50) NOT NULL,
+PRIMARY KEY ( id ),
+UNIQUE KEY `unique_learner_learnername` (`learnername`)
+) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+```
+
+### 主键优化
+##### 数据组织方式
+在InnoDB存储引擎中,表数据都是根据主键顺序组织存放的,这种存储方式的表称为索引组织表(index organized table IOT)。
+![[Pasted image 20240508211011.png]]
+#### ● 页分裂
+页可以为空,也可以填充一半,也可以填充100%。每个页包含了2-N行数据(如果一行数据多大,会行溢出),根据主键排列。
+![[Pasted image 20240508211401.png]]
+当数据乱序插入时，如果顺序不对而且空间不够的情况下它会开辟一个新的页后把要插入页的50%数据截取出来和要插入的乱序数据插入到新的页中之后更改页的位置。
+
+#### ● 页合并
+![[Pasted image 20240508211703.png]]
+当删除一行记录时,实际上记录并没有被物理删除,只是记录被标记(flaged)为删除并且它的空间变得允许被其他记录声明使用。
+当页中删除的记录达到MERGE_THRESHOLD(默认为页的50%),InnoDB会开始寻找最靠近的页(前或后)看看是否可以将两个页合并以优化空间使用。
+![[Pasted image 20240508212924.png]]
+![[Pasted image 20240508213049.png]]
+
+###### 知识小贴士:
+MERGE_THRESHOLD:合并页的阈值,可以自己设置,在创建表或者创建索引时指定。
+#### ● 主键设计原则
+1. 满足业务需求的情况下,尽量降低主键的长度。
+2. 插入数据时,尽量选择顺序插入,选择使用AUTO_INCREMENT自增主键。
+3. 尽量不要使用UUID做主键或者是其他自然主键,如身份证号。
+4. 业务操作时,避免对主键的修改。
+### order by的优化
+Using filesort:通过表的索引或全表扫描,读取满足条件的数据行,然后在排序缓冲区sort buffer中完成排序操作,所有不是通过索引直
+接返回排序结果的排序都叫 FileSort排序。
+Using index:通过有序索引顺序扫描直接返回有序数据,这种情况即为using index,不需要额外排序,操作效率高。
+- 做业务需求是时尽量要用using index 它是顺序扫描所用的时间比较少但是using filesort是全表扫描他所需要的性能比较高
+
+mysql> explain select id,name,age,phone from user_info order by age;
++----+-------------+-----------+------------+------+---------------+------+------------+------------+------------+
+| id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered |        Extra              |
++----+-------------+-----------+------------+------+---------------+------+------------+------------+------------+
+|  1 | SIMPLE      | user_info | NULL       | ALL  | NULL          | NULL | NULL    | NULL |   24 |   100.00 | Using filesort      |
++----+-------------+-----------+------------+------+---------------+------+------------+------------+------------+
+
+
+```mysql
+#根据age,phone进行降序一个升序,一个降序
+explain select id,age,phone from user_info order by age asc, phone desc;
+```
+
+mysql> explain select id,age,phone from user_info order by age asc ,phone desc ;
++----+-------------+-----------+------------+-------+---------------+------------------------+---------+------+------------+------------------+
+| id | select_type | table     | partitions | type  | possible_keys | key                       | key_len | ref  | rows |   filtered|         Extra                                      |
++----+-------------+-----------+------------+-------+---------------+------------------------+---------+------+------------+------------------+
+|  1 | SIMPLE      | user_info | NULL       | index | NULL          | idx_userinfo_age_phone | 88      | NULL |   24 |   100.00 | Using index; Using filesort   |
++----+-------------+-----------+------------+-------+---------------+------------------------+---------+------+------------+------------------+
+```mysql
+#创建索引
+create index idx_user_age_phone_ad on user_info(age asc ,phone desc);
+#根据age,phone进行降序一个升序,一个降序
+explain select id,age,phone from user_info order by age asc, phone desc;
+```
++----+-------------+-----------+------------+-------+---------------+--------------------------+--------+-------+------+--------+------------+
+| id | select_type | table               | partitions    | type    | possible_keys |             key                        | key_len  | ref       | rows | filtered  |    Extra         |
++----+-------------+-----------+------------+-------+---------------+--------------------------+--------+-------+------+--------+------------+
+|  1 | SIMPLE       | user_info         | NULL          | index   | NULL                | indx_userinfo_age_phne | 88         | NULL  |   24    |  100.00 | Using index |
++----+-------------+-----------+------------+-------+---------------+--------------------------+--------+
+创建降序升序索引会把using filesort优化掉。
+如果查询表没有走覆盖索引时他还是会出现using filesort,全表扫描排序时它会回表查询。
+##### 总结
+- 根据排序字段建立合适的索引,多字段排序时,也遵循最左前缀法则。
+- 尽量使用覆盖索引。
+- 多字段排序,一个升序一个降序,此时需要注意联合索引在创建时的规则(ASC/DESC)。
+- 如果不可避免的出现filesort,大数据量排序时,可以适当增大排序缓冲区大小sort_buffer_size(默认256k)。
+
+```mysql
+#执行分组操作,根据profession字段分组
+
+explain select profession, count(*) from user_info group by profession ;
+
+#创建索引
+
+Create index idx_user_pro_age_sta on user_info(profession, age, status);
+#执行分组操作,根据profession字段分组
+
+explain select profession, count(*) from user_info group by profession, age;
+```
++--+-------------+---------+-----------+--------+--------------------------+--------------------------------+--------+-----+------+------+------------+
+| id | select_type  | table      | partitions  | type       |    possible_keys                 |           key                                    | key_len   | ref    | rows  | filtered | Extra            |
++--+-------------+---------+--------+-------+--------------------+--------------+-------------------------------+---------+------+--------+------------+
+|  1 | SIMPLE          | user_info  | NULL       | index      | idx_userinfo_pro_age_sta | idx_userinfo_pro_age_sta          | 251        | NULL |  24   |  100.00 | Using index      |
++----+-----------+-------+--------+-------+--------------------------+---------+-----+---+----+------+------------+
+```mysql
+#执行分组操作,根据profession字段分组
+explain select profession, count(*) from user_infor group by profession;#覆盖索引中
+```
++----+-------------+-----------+------------+-------+--------------------------+-----------------------+---------+------+------+--------+---------------------
+| id    | select_type        | table          | partitions        | type     | possible_keys                         | key                             | key_len     | ref      | rows     | filtered    | Extra                        |
++----+-------------+-----------+------------+-------+--------------------------+-----------------------+---------+------+------+--------+---------------------
+|  1    | SIMPLE             | user_info     | NULL             | index     | idx_userinfo_pro_age_sta            | idx_userinfo_pro_age_sta      | 251        | NULL     |   24      |   100.00   | Using index; Using temporary|
++----+-------------+-----------+------------+-------+--------------------------+-----------------------+---------+------+------+--------+---------------------
+```mysql
+ explain select profession,age, count(*) from user_info  group by profession, age;#满足最左前缀法则所以走的是索引
+ ```
++----+-------------+-----------+------------+-------+--------------------------+--------------------------+---------+------+------+----------+-------------+
+| id    | select_type       | table           | partitions        | type      | possible_keys                       | key                                   | key_len     | ref      | rows     | filtered      | Extra             |
++----+-------------+-----------+------------+-------+--------------------------+--------------------------+---------+------+------+----------+-------------+
+|  1    | SIMPLE            | user_info      | NULL              | index     | idx_userinfo_pro_age_sta           | idx_userinfo_pro_age_sta           | 251          | NULL    |   24    |   100.00      | Using index   
++----+-------------+-----------+------------+-------+--------------------------+--------------------------+---------+------+------+----------+-------------+
+
+### count优化
+```mysql
+explain select cunt(*) from user_info ;
+```
+MylSAM引擎把一个表的总行数存在了磁盘上,因此执行count(*)的时候会直接返回这个数,效率很高;
+InnoDB 引擎就麻烦了,它执行count(*)的时候,需要把数据一行一行地从引擎里面读出来,然后累积计数。
+优化思路：自己设计一个函数去技术，或者是更改引擎（InnoDB)
+#### ● count的几种用法
+count()是一个聚合函数,对于返回的结果集,一行行地判断,如果count函数的参数不是NULL,累计值就加1,否则不加,最后
+返回累计值。
+###### 用法:
+count(*)、count(主键)、count(字段)、count(1)
+###### count(主键)
+InnoDB引擎会遍历整张表,把每一行的主键id值都取出来,返回给服务层。服务层拿到主键后,直接按行进行累加(主键不可能为null)。
+###### count(字段)
+没有not null约束:InnoDB引擎会遍历整张表把每一行的字段值都取出来,返回给服务层,服务层判断是否为null,不为null,计数累加。
+有not null 约束:InnoDB引擎会遍历整张表把每一行的字段值都取出来,返回给服务层,直接按行进行累加。
+###### count (1)
+InnoDB引擎遍历整张表,但不取值。服务层对于返回的每一行,放一个数字“1”进去,直接按行进行累加。
+###### count (*)
+InnoDB引擎并不会把全部字段取出来,而是专门做了优化,不取值,服务层直接按行进行累加。
+###### 按照效率排序的话,count(字段)<count(主键id)<count(1)~count(*),所以尽量使用count(*)。
+###  总结
+
+##### 1. 插入数据
+insert:批量插入、手动控制事务、主键顺序插入
+大批量插入:load data local infile
+##### 2. 主键优化
+主键长度尽量短、顺序插入 AUTO_INCREMENT 
+##### 3. order by优化
+using index:直接通过索引返回数据,性能高
+using filesort:需要将返回的结果在排序缓冲区排序
+##### 4. group by优化
+索引,多字段分组满足最左前缀法则
+##### 5.limit优化
+覆盖索引+子查询
+##### 6. count优化
+ count(字段)<count(主键id)<count(1)~count(*),所以尽量使用count(*)
+##### 7. update优化
+尽量根据主键/索引字段进行数据更新
+
+# 视图
+视图(View)是一种虚拟存在的表。视图中的数据并不在数据库中实际存在,行和列数据来自定义视图的查询中使用的表,这种表称之为基表。并且是在使用视图时动态生成的。
+通俗的讲,视图只保存了查询的SQL逻辑,不保存查询结果。所以我们在创建视图的时候,主要的工作就落在创建这条SQL查询语句上。
+### ● 创建
+```mysql
+CREATE [OR REPLACE] VIEW 视图名称[(列名列表)] AS SELECT语句[WITH[CASCADED | LOCAL] CHECK OPTION]
+```
+### ● 查询
+```mysql
+#查看创建视图语句:
+SHOW CREATE VIEW 视图名称;
+#查看视图数据:
+SELECT* FROM 视图名称 ……;
+```
+### ● 修改
+```mysql
+#方式一:
+CREATE [OR REPLACE] VIEW 视图名称[(列名列表)] AS SELECT语句 [WITH[CASCADED | LOCAL] CHECK OPTION]
+#方式二:
+ALTER VIEW 视图名称[(列名列表)] AS SELECT语句 [WITH[CASCADED |LOCAL] CHECK OPTION]
+```
+### ● 删除
+```mysql
+DROP VIEW [IF EXISTS] 视图名称 [视图名称] ...
+```
+#### ●实例
+```mysql
+-- 创建  
+create or replace view characters_view as select*from characters where id<='12';  
+-- 查询  
+show create view characters_view;-- 查询创建视图语句  
+select*from characters_view; -- 查询创建视图数据  
+-- 更改  
+create or replace view characters_view as select id,name from characters where id<='17';  
+alter view characters_view as select id,name,age from characters where id<='10';
+-- 删除
+drop view characters_view;
+
+-- casceded 查询选项
+create or replace view user_info_view as select id, name from user_info where id<=25 with cascaded check option; -- with cascaded check option插入不符合查询条件的数据时就报错
+ex:insert into user_info_view (id,name) values (30,'tom');
+```
+## 视图cascaded检查选项
+当使用WITH CHECK OPTION子句创建视图时,MySQL会通过视图检查正在更改的每个行,例如 插入,更新,删除,以使其符合视图的定义。MySQL允许基于另一个视图创建视图,它还会检查依赖视图中的规则以保持一致性。为了确定检查的范围,mysql提供了两个选项:CASCADED 和LOCAL,默认值为CASCADED。
+```mysql
+create or replace view user_info_v1 as select id, name from user_info where id<=25 with cascaded check option;  
+insert into user_info_v1 (id,name) values (30,'tom');  
+create or replace view user_info_v2 as select id, name from user_info_v1 where id>=15 with local check option;  
+insert into user_info_v2 (id,name) values (18,'yom');  
+insert into user_info_v2 (id,name) values (10,'zom');  
+insert into user_info_v2 (id,name) values (20,'xom');  
+insert into user_info_v2 (id,name) values (30,'com');  
+insert into user_info_v2 (id,name) values (40,'vom');   
+create or replace view user_info_v3 as select id, name from user_info_v2 where id<=15 ;  
+insert into user_info_v3 (id,name) values (7,'yom');  
+insert into user_info_v3 (id,name) values (10,'zom'); -- 不能运行因为它不仅要满足user_info_v3还要满足user_info_v2更要满足user_info_v1的查询条件
+insert into user_info_v3 (id,name) values (20,'xom');  
+insert into user_info_v3 (id,name) values (30,'com');  
+insert into user_info_v3 (id,name) values (40,'vom');
+```
+## ● 视图的更新
+
+要使视图可更新,视图中的行与基础表中的行之间必须存在一对一的关系。如果视图包含以下任何一项,则该视图不可更新:
+1. 聚合函数或窗口函数(SUM()、MIN()、MAX()、COUNT()等
+2. DISTINCT
+3. GROUP BY
+4. HAVING
+5. UNION 或者 UNION ALL
+### ● 作用
+###### 简单
+视图不仅可以简化用户对数据的理解,也可以简化他们的操作。那些被经常使用的查询可以被定义为视图,从而使得用户不必为以后的操作每次指定全部的条件。
+###### 安全
+数据库可以授权,但不能授权到数据库特定行和特定的列上。通过视图用户只能查询和修改他们所能见到的数据。
+###### 数据独立
+视图可帮助用户屏蔽真实表结构变化带来的影响。
+
+#### 案例
+-- 为了保证数据库表的安全性,开发人员在操作tb_user表时,只能看到的用户的基本字段,屏蔽手机号和邮箱两个字段。  
+```mysql
+create or replace view user_info_v as select id,name,profession,age,gender,status,createtime from user_info;  
+```
+-- 查询每个学生所选修的课程(三张表联查),这个功能在很多的业务中都有使用到,为了简化操作,定义一个视图。  
+```mysql
+select s.name,s.id,c.name from student s ,student_course sc,course c where s.id=sc.studentid and sc.courseid=c.id;  
+create or replace view student_course_v as select s.id student_id, s.name student_name,c.name course_name from student s ,student_course sc,course c where s.id=sc.studentid and sc.courseid=c.id;
+```
+# 存储过程
+### ● 介绍
+存储过程是事先经过编译并存储在数据库中的一段SQL语句的集合,调用存储过程可以简化应用开发人员的很多工作,减少数据在数据库和应用服务器之间的传输,对于提高数据处理的效率是有好处的。存储过程思想上很简单,就是数据库SQL语言层面的代码封装与重用。
+#### ● 特点
+封装,复用
+可以接收参数,也可以返回数据
+减少网络交互,效率提升
+### 语法
+```mysql
+#● 创建
+CREATE PROCEDURE 存储过程名称([参数列表])
+BEGIN
+		-- SQL语句
+END ;
+#● 调用
+CALL 名称([参数]);
+#● 查看
+
+SELECT*FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_SCHEMA='xxx' ;-- 查询指定数据库的存储过程及状态信息
+
+SHOW CREATE PROCEDURE 存储过程名称 ;-- 查询某个存储过程的定义
+```
+实例
+```mysql
+create procedure user_info_p()  
+begin  
+    select*from user_info;  
+end $$  
+  
+  
+-- 调用  
+call user_info_p();  
+-- 查看  
+select*from information_schema.ROUTINES where ROUTINE_SCHEMA= 'xukurs';  
+show create procedure user_info_p;  
+-- 删除
+```
+###### 注意:在命令行中,执行创建存储过程的SQL时,需要通过关键字==delimiter==指定SQL语句的结束符。
+## ● 变量
+系统变量 是MySQL服务器提供,不是用户定义的,属于服务器层面。分为全局变量(GLOBAL)、会话变量(SESSION)。
+### 系统变量
+##### 查看
+```mysql
+SHOW [ SESSION | GLOBAL ] VARIABLES ; -- 查看所有系统变量
+SHOW [SESSION|GLOBAL] VARIABLES LIKE'.....'; -- 可以通过LIKE模糊匹配方式查找变量
+SELECT @@[SESSION|GLOBAL]系统变量名;-- 查看指定变量的值
+```
+##### 设置系统变量
+```mysql
+
+SET[SESSION|GLOBAL] 系统变量名=值;
+SET @@[SESSION|GLOBAL]系统变量名=值;
+```
+###### 注意：如果没有指定SESSION/GLOBAL，默认是SESSION，会话变量。所设置的全局参数会失效要想不失效，mysql服务重新启动之后，可以在 /etc/my.cnf 中配置.
+### 自定义变量
+==用户定义变量== 是用户根据需要自己定义的变量,用户变量不用提前声明,在用的时候直接用“@变量名”使用就可以。其作用域为当前连接。
+#### 赋值
+```mysql
+#set赋值
+SET @var_name = expr [, @var_name = expr] ... ;
+SET @var_name := expr [, @var_name := expr] ... ;
+#select赋值
+SELECT @var_name := expr [, @var_name := expr] ... ;
+SELECT 字段名 INTO @var_name FROM 表名;
+```
+#### 使用
+```mysql
+SELECT @var_name ;
+```
+###### 注意: 用户定义的变量无需对其进行声明或初始化,只不过获取到的值为NULL。
+### 局部变量
+==局部变量== 是根据需要定义的在局部生效的变量,访问之前,需要`DECLARE`声明。可用作存储过程内的局部变量和输入参数,局部变量的范围是在其内声明的`BEGIN.END`块。
+#### 声明
+```mysql
+DECLARE 变量名 变量类型[DEFAULT ... ];
+```
+变量类型就是数据库字段类型:INT、BIGINT、CHAR、VARCHAR、DATE、TIME等。
+#### 赋值
+```mysql
+SET 变量名=值;
+SET 变量名 := 值;
+SELECT 字段名 INTO 变量名 FROM 表名 …..;
+```
+
+```mysql
+create procedure p2()  
+    begin  
+declare stu_count int default 0;  
+set stu_count :=100;  
+select count(*) into stu_count from student;  
+select stu_count;  
+    end ;  
+  
+call p2();
+```
+
+## 存储过程语法之if
+###### 语法:
+
+```mysql
+IF 条件1 THEN
+......
+ELSEIF 条件2 THEN         --可选
+
+......
+
+ELSE                     --可选
+......
+END IF;
+......
+
+```
+
+```mysql
+delimiter $$  
+create procedure p3()  
+begin  
+declare score_level int default 58;  
+declare result varchar(10);  
+if score_level >=85 then  
+    set result:='优秀';  
+    elseif score_level >=60 then  
+    set result:='及格';  
+    elseif score_level<=60 then  
+    set result:='不及格';  
+END if ;  
+select result;  
+end $$  
+delimiter ;  
+call p3();
+```
+### 参数
+![[Pasted image 20240520215321.png]]
+#### 用法:
+```MySQL
+CREATE PROCEDURE 存储过程名称([IN/OUT/INOUT 参数名 参数类型])
+
+BEGIN
+
+-- SQL语句
+
+END ;
+```
+##### 实例
+score>=85分,等级为优秀。  
+score >= 60分 且 score<85分,等级为及格。  
+score< 60分,等级为不及格。
+```mysql
+delimiter $$  
+create procedure p4(in score_level int,out result varchar(10))  
+begin  
+  
+if score_level >=85 then  
+    set result:='优秀';  
+    elseif score_level >=60 then  
+    set result:='及格';  
+    elseif score_level<=60 then  
+    set result:='不及格';  
+END if ;  
+  
+end $$  
+delimiter ;  
+call p4(18,@result);  
+select @result;
+```
+
+## case
+
+### 语法一
+
+```mysql
+CASE case_value
+WHEN when_valuel THEN statement list1
+[ WHEN when_value2 THEN statement_list 2] ...
+[ ELSE statement_list ]
+END CASE;
+```
+
+### 语法二
+
+```mysql
+CASE
+WHEN search_condition1 THEN statement_list1
+[WHEN search_condition2 THEN statement_list2] ...
+[ELSE statement_list]
+END CASE;
+```
+#### 实例
+根据传入的月份,判定月份所属的季节(要求采用case结构)。 
+1. 1-3月份,为第一季度  
+2. 4-6月份,为第二季度  
+3. 7-9月份,为第三季度  
+4. 10-12月份,为第四季度
+```MySQL
+delimiter $$  
+create procedure p6(in month int ,out season varchar(10))  
+begin  
+  case 
+    when month>=3 and month<=5 then set season:='春季';  
+    when month>=6 and month<=8 then set season:='夏季';  
+    when month>=9 and month<=11 then set season:='秋季';  
+    when month in(12,1,2)  then set season:='冬季';  
+    else set season:='非法参数';  
+    end case;  
+    select concat('您输入的月份为:',month,',所属的季度为:',season);  
+end $$  
+ call p6(11,@season);  
+ select @season;
+```
+## while
+
+while循环是有条件的循环控制语句。满足条件后,再执行循环体中的SQL语句。具体语法为:
+先判定条件,如果条件为true,则执行逻辑,否则,不执行逻辑
+```mysql
+WHILE 条件 DO
+
+SQL逻辑 ….
+
+END WHILE;
+```
+###### 实例
+计算从1累加到n的值,n为传入的参数值。
+```mysql
+create  
+    definer = root@localhost procedure p7(IN n int)  
+begin  
+    declare total int default 0;  
+    while n>=1 do  
+      set total:= total+n;  
+      set n:=n-1;  
+        end while;  
+    select total;  
+end;
+```
+### repeat
+repeat是有条件的循环控制语句,当满足条件的时候退出循环。具体语法为:
+先执行一次逻辑,然后判定逻辑是否满足,如果满足,则退出。如果不满足,则继续下一次循环
+
+```mysql
+REPEAT
+
+SQL逻辑 …..
+
+UNTIL 条件
+
+END REPEAT;
+```
+###### 实例
+计算从1累加到n的值,n为传入的参数值。
+```mysql
+create  
+    definer = root@localhost procedure p8(IN n int)  
+begin  
+    declare total int default 0;  
+    repeat  
+        set total:= total+n;  
+      set n:=n-1;  
+    until  n<1  
+       end repeat ;  
+    select total;  
+end;
+```
+
+### loop
+
+LOOP实现简单的循环,如果不在SQL逻辑中增加退出循环的条件,可以用其来实现简单的死循环。LOOP可以配合一下两个语句使用:
+· LEAVE:配合循环使用,退出循环。
+· ITERATE:必须用在循环中,作用是跳过当前循环剩下的语句,直接进入下一次循环。
+```mysql
+
+[begin_label:] LOOP
+SQL逻辑 …..
+END LOOP [end_label];
+
+
+LEAVE label ;-- 退出指定标记的循环体
+ITERATE label; -- 直接进入下一次循环
+```
+###### 实例
+计算从1累加到n的值,n为传入的参数值。
+```mysql
+create  
+    definer = root@localhost procedure p9(IN n int)  
+begin  
+    declare summarize int default 0;  
+    sum:loop  
+        if n<1 then leave sum;  
+        end if;  
+    set summarize:= summarize+n;  
+    set n:=n-1;  
+end loop sum;  
+    select summarize;  
+end;
+```
+-- Loop计算从1到n之间的偶数累加的值,n为传入的参数值。
+```mysql
+create  
+    definer = root@localhost procedure p10(IN n int)  
+begin  
+    declare total int default 0;  
+    sum:loop  
+        if n<1 then leave  sum;  
+        end if;  
+        if n%2 =1 then  
+            set n:=n-1;  
+        ITERATE sum;  
+         end if;  
+        set total:= total+n;  
+      set n:=n-1;  
+end loop sum;  
+    select total;  
+end;
+```
+## 游标
+
+游标(CURSOR)是用来存储查询结果集的数据类型,在存储过程和函数中可以使用游标对结果集进行循环的处理。游标的使用包括游标的声明、OPEN、FETCH和CLOSE,其语法分别如下。
+##### 声明游标
+```mysql
+DECLARE 游标名称 CURSOR FOR 查询语句;
+```
+###### 打开游标
+```mysql
+OPEN 游标名称;
+```
+##### 获取游标记录
+```mysql
+FETCH 游标名称 INTO 变量[变量];
+```
+##### 关闭游标
+```mysql
+CLOSE 游标名称;
+```
+根据传入的参数uage,来查询用户表tb_user中,所有的用户年龄小于等于uage的用户姓名(name)和专业(profession).  并将用户的姓名和专业插入到所创建的一张新表(id,name,profession)中。
+当出现一个需求之时我们要清楚需求的底层逻辑，更要会拆解需求并找寻方法去解决需求中的问题。
+-- 逻辑:  
+-- A. 声明游标,存储查询结果集  
+-- B. 准备:创建表结构  
+-- C. 开启游标  
+-- D. 获取游标中的记录  
+-- E. 插入数据到新表中
+```mysql
+delimiter $$  
+create procedure p12(in uage int)  
+begin  
+declare uname varchar(100); -- 声明普通变量和游标必须先声明普通变量再声明游标。  
+declare uprofession varchar(100);  
+declare u_age cursor for select name ,profession from user_info where age<=uage; 
+drop table if exists you_age;必须要有这句语句不然它会显示 table is exists错误
+ create table you_age  
+ (  
+id int primary key auto_increment,  
+name varchar(10),  
+profession varchar(10)  
+ );  
+ open u_age ;  
+ while true  
+ do    fetch u_age into uname,uprofession;  
+    insert into you_age values(null,uname,uprofession);  
+end while ;  
+  
+ close u_age;  
+end $$  
+call p12(40);
+它会在后面显示 [02000][1329] No data - zero rows fetched, selected, or processed
+错误 我们要用条件处理语句这件问题
+```
+## 条件处理程序
+条件处理程序(Handler)可以用来定义在流程控制结构执行过程中遇到问题时相应的处理步骤。具体语法为:
+```mysql
+DECLARE handler_action HANDLER FOR condition_value [, condition_value] ... statement ;
+
+handler_action
+CONTINUE:继续执行当前程序
+EXIT:终止执行当前程序
+
+condition_value
+SQLSTATE sqlstate_value:状态码,如02000
+SQLWARNING:所有以01开头的SQLSTATE代码的简写
+NOT FOUND:所有以02开头的SQLSTATE代码的简写
+SQLEXCEPTION:所有没有被SQLWARNING或NOT FOUND捕获的SQLSTATE代码的简写
+
+```
+
+```mysql
+create  
+    definer = root@localhost procedure p12(IN uage int)  
+begin  
+declare uname varchar(100); -- 声明普通变量和游标必须先声明普通变量再声明游标。  
+declare uprofession varchar(100);  
+declare u_age cursor for select name ,profession from user_info where age<=uage;  
+declare exit handler for sqlstate '02000' close u_age;  
+drop table if exists you_age;  
+ create table you_age  
+ (  
+id int primary key auto_increment,  
+name varchar(10),  
+profession varchar(10)  
+ );  
+ open u_age ;  
+ while true  
+ do    fetch u_age into uname,uprofession;  
+    insert into you_age values(null,uname,uprofession);  
+end while ;  
+ close u_age;  
+end;
+```
+## 存储函数
+存储函数是有返回值的存储过程,存储函数的参数只能是IN类型的。具体语法如下:
+```mysql
+CREATE FUNCTION 存储函数名称([参数列表])
+RETURNS type [characteristic ... ]
+BEGIN
+-- SQL语句
+RETURN ...;
+END; 
+
+characteristic说明:
+· DETERMINISTIC:相同的输入参数总是产生相同的结果
+· NO SQL:不包含SQL语句。
+· READS SQL DATA: 包含读取数据的语句,但不包含写入数据的语句。
+```
+
+```mysql
+delimiter $$  
+create function num_adder(n int)  
+returns int deterministic  
+begin  
+   declare total int default 0;  
+    while n>0 do  
+           set total:= total+n;  
+      set n:=n-1;  
+   end while;  
+return total;  
+end $$    
+select num_adder(1000);
+characteristic如果不声明在mysql 8.0版本中会显示
+[HY000)[1418] This function has none of DETERMINISTIC, NO SQL, or READS SQL DATA in its declaration and binary logging is enablec (you "might" want to use the less safe log_bin_trust_function_creators variable;
+这种错误让我们去声明charactistic 
+```
+
+# 触发器
+触发器是与表有关的数据库对象,指在insert/update/delete之前或之后,触发并执行触发器中定义的SQL语句集合。触发器的这种特性可以协助应用在数据库端确保数据的完整性,日志记录,数据校验等操作。使用别名OLD和NEW来引用触发器中发生变化的记录内容,这与其他的数据库是相似的。现在触发器还只支持行级触发,不支持语句级触发。
+
+![[Pasted image 20240527111525.png]]
+
+## ● 语法
+### 创建
+```mysql
+CREATE TRIGGER trigger_name
+BEFORE/AFTER INSERT/UPDATE/DELETE
+ON tbl_name FOR EACH ROW -- 行级触发器
+BEGIN
+trigger_stmt;
+END;
+```
+
+### 查看
+```mysql
+SHOW TRIGGERS ;
+```
+###  删除
+```mysql
+
+DROP TRIGGER [schema_name.]trigger_name ; -- 如果没有指定schema_name,默认为当前数据库。
+```
+## 插入触发器实例
+
+```mysql
+  
+-- 需求:通过触发器记录 user 表的数据变更日志(user_logs),包含增加,修改,删除;  
+-- 准备工作:日志表 user_logs  
+create table user_logs(  
+id int(11)  primary key not null auto_increment,  
+operation varchar(20) not null comment'操作类型, insert/update/delete',  
+operate_time datetime not null comment'操作时间',  
+operate_id int(11) not null comment'操作的ID',  
+operate_params varchar(500)comment'操作参数'  
+)engine=innodb default charset=utf8;  
+  
+-- 插入数据触发器  
+delimiter $$  
+create trigger user_insert  
+after insert  
+    on user_info for each row  
+    begininsert into user_logs(id, operation, operate_time, operate_id, operate_params)  
+    VALUES(null,'insert',now(),new.id, concat('插入内容:' ,'id=',new.id,',name=',new.name,',phone=',new.phone,',email=',new.email,',profession=',new.profession));  
+    end $$
+show triggers ;  
+drop trigger user_insert_trigger;
+```
+## 修改触发器实例 
+```mysql
+  
+ 
+delimiter $$  
+create trigger user_update  
+after update  
+    on user_info for each row  
+    begininsert into user_logs(id, operation, operate_time, operate_id, operate_params)  
+    VALUES(null,'update',now(),new.id,  
+           concat('更新之前的数据:' ,'id=',old.id,',name=',old.name,',phone=',old.phone,',email=',old.email,',profession=',old.profession  
+           ,'|更新之后的数据:' ,'id=',new.id,',name=',new.name,',phone=',new.phone,',email=',new.email,',profession=',new.profession));  
+    end $$  
+  
+    show triggers ;  
+update user_info set age = 32 where id = 23;  
+update user_info set age = 26 where id = 26;
+
+```
+
+```mysql
+-- 删除触发器  
+delimiter $$  
+create trigger user_delete  
+after delete  
+    on user_info for each row  
+    begin        insert into user_logs(id, operation, operate_time, operate_id, operate_params)  
+    VALUES(null,'delete',now(),old.id,  
+           concat('更新之前的数据:' ,'id=',old.id,',name=',old.name,',phone=',old.phone,',email=',old.email,',profession=',old.profession));  
+    end $$  
+  
+    show triggers ;  
+  
+  
+delete from user_info where id = 25;
+```
+
+# 锁
+锁是计算机协调多个进程或线程并发访问某一资源的机制。在数据库中,除传统的计算资源(CPU、RAM、I/O)的争用以外,数据也是一种供许多用户共享的资源。如何保证数据并发访问的一致性、有效性是所有数据库必须解决的一个问题,锁冲突也是影响数据库并发访问性能的一个重要因素。从这个角度来说,锁对数据库而言显得尤其重要,也更加复杂。
+
+## 全局锁
+全局锁就是对整个数据库实例加锁,加锁后整个实例就处于只读状态,后续的DML的写语句,DDL语句,已经更新操作的事务提交语句都将被阻塞。其典型的使用场景是做全库的逻辑备份,对所有的表进行锁定,从而获取一致性视图,保证数据的完性。
+![[Pasted image 20240603215029.png]]
+在数据库正在更新时如果不进行锁操作备份的话它会把表中的数据表中已插入的数据备份下来但是正在插入的数据漏备份从而导致数据的不完整。
+#### 语法
+```mysql
+flush tables with read lock ; -- 应用全局锁
+mysqldump -uroot -p1234 itcast > itcast.sql; -- 使用备份语句
+unlock tables ; -- 释放全局锁
+```
+## 表级锁
+对于表锁,分为两类:
+### 1. 表共享读锁(read lock)：
+客户端和开发端都可以读取表中的内容。但是开发端的增删改功能会被锁住等锁开了之后需要重新更改，客户端会被阻塞等锁开了之后信息会改变。（在此开发端为加锁的主机，并非狭义的开发端）
+#### 表锁之共享读锁演示
+![[Pasted image 20240725203724.png]]
+
+#### 2. 表独占写锁(write lock):
+开发端添加写锁，仅有开发端才能增删改查，而客户端的所有信息都是被阻塞状态，仅在解锁之后才能增删改查操作。
+##### 表锁之独占写锁演示
+![[Pasted image 20240725210544.png]]
+
+#### 语法 :
+1. 加锁:locktables 表名 ... read/write。
+2. 释放锁:unlock tables/客户端断开连接。
+
+### 意向锁
+为了避免DML在执行时,加的行锁与表锁的冲突,在InnoDB中引入了意向锁,使得表锁不用检查每行数据是否加锁,使用意向锁来减少表锁的检查。
+当线程A加入行锁，同时线程B加入表锁时需要检查每一行是否加了行锁及锁的类型再而判断表锁是否与行锁兼容，如此它的性能会很低。
+![[Pasted image 20240728214759.png]]
+但是线程A加入意向锁时，同时线程B加入表锁时只需要检查意向锁及其类型就可以了。等到行锁释放意向锁释放线程B才可以拿到这张表的表锁不然的话会表锁时阻塞状态。
+![[Pasted image 20240728223828.png]]
+1. 意向共享锁(IS):与表锁共享锁(read)兼容,与表锁排它锁(write)互斥。
+2. 意向排他锁(IX):与表锁共享锁(read)及排它锁(write)都互斥。意向锁之间不会互斥。
+
+可以通过以下SQL,查看意向锁及行锁的加锁情况:
+```mysql
+select object_schema,object_name,index_name,lock_type,lock_mode,lock_data from performance_schema.data_locks;
+```
+
+## 行级锁
+行级锁,每次操作锁住对应的行数据。锁定粒度最小,发生锁冲突的概率最低,并发度最高。应用在InnoDB存储引擎中。
+InnoDB的数据是基于索引组织的,行锁是通过对索引上的索引项加锁来实现的,而不是对记录加的锁。对于行级锁,主要分为以下三类:
+1. 行锁(Record Lock):锁定单个行记录的锁,防止其他事务对此行进行update和delete。在RC(Repeatable commit)、RR(Repeatable Read)隔离级别下都支持。
+2. 间隙锁(Gap Lock):锁定索引记录间隙(不含该记录),确保索引记录间隙不变,防止其他事务在这个间隙进行insert,产生幻读。在RR隔离级别下都支持。
+3. 临键锁(Next-Key Lock):行锁和间隙锁组合,同时锁住数据,并锁住数据前面的间隙Gap。在RR隔离级别下支持。
+InnoDB实现了以下两种类型的行锁:
+1. 共享锁(S):允许一个事务去谈一行,阻止其他事务获得相同数据集的排它锁。
+2. 排他锁(X):允许获取排他锁的事务更新数据,阻止其他事务获得相同数据集的共享锁和排他锁。
+ ![[Pasted image 20240730211124.png]]
+
+![[Pasted image 20240730211848.png]]
+以下是相对于行锁而言
+默认情况下,InnoDB在REPEATABLE READ事务隔离级别运行,InnoDB使用 next-key锁进行搜索和索引扫描,以防止幻读。
+1. 针对唯一索引进行检索时,对已存在的记录进行等值匹配时,将会自动优化为行锁。
+2. InnoDB的行锁是针对于索引加的锁,不通过索引条件检索数据,那么InnoDB将对表中的所有记录加锁,此时就会升级为表锁
+
+ 以下是相对于行级锁中临建锁与间隙锁而言的
+默认情况下,InnoDB在REPEATABLE READ事务隔离级别运行,InnoDB使用next-key锁进行搜索和索引扫描,以防止幻读。
+1. 索引上的等值查询(唯一索引),给不存在的记录加锁时,优化为间隙锁。
+2. 索引上的等值查询(普通索引),向右遍历时最后一个值不满足查询需求时,next-key lock退化为间隙锁。
+3. 索引上的范围查询(唯一索引) -- 会访问到不满足条件的第一个值为止。
+###### 注意:间隙锁唯一目的是防止其他事务插入间隙。间隙锁可以共存,一个事务采用的间隙锁不会阻止另一个事务在同一间隙上采用间隙锁。
+```mysql
+索引上的等值查询(唯一索引),给不存在的记录加锁时,优化为间隙锁。
+-- 在客户端1
+mysql> select*from stu;
++-------+-----------+--------+-----------+--------------------+
+| stuid | stuname   | stuage | stugender | email              |
++-------+-----------+--------+-----------+--------------------+
+|     1 | 李隆基    |     17 | 女        | NULL               |
+|     2 | 张无忌    |     18 | 男        | NULL               |
+|     4 | 赵敏      |     20 | 女        | NULL               |
+|     5 | 小昭      |     21 | 女        | NULL               |
+|     6 | 杨道      |     22 | 男        | NULL               |
+|     7 | 张道灰    |     23 | 男        | zhangdaoshi@qq.com |
+|     8 | 黛绮丝    |     24 | 女        | NULL               |
+|     9 | 范凉凉    |     25 | 女        | NULL               |
+|    10 | 陈友谅    |     26 | 男        | NULL               |
+|    11 | 张士诚    |     27 | 男        | NULL               |
+|    12 | 常遇春    |     28 | 男        | NULL               |
+|    13 | 张三丰    |     29 | 男        | NULL               |
+|    14 | 灭绝      |     30 | 女        | NULL               |
+|    15 | 胡青牛    |     31 | 男        | NULL               |
+|    16 | 周芷若    |     32 | 女        | NULL               |
++-------+-----------+--------+-----------+--------------------+
+mysql> update stu set stuage= 19 where stuid =3;
+Query OK, 0 rows affected (0.00 sec)
+Rows matched: 0  Changed: 0  Warnings: 0
+-- 在客户端2
+mysql> select object_schema,object_name,index_name,lock_type,lock_mode,lock_data from performance_schema.data_locks;
++---------------+-------------+------------+-----------+-----------+-----------+
+| object_schema | object_name | index_name | lock_type | lock_mode | lock_data |
++---------------+-------------+------------+-----------+-----------+-----------+
+| learnerx      | stu         | NULL       | TABLE     | IX        | NULL      |
+| learnerx      | stu         | PRIMARY    | RECORD    | X,GAP     | 4         |
++---------------+-------------+------------+-----------+-----------+-----------+
+2 rows in set (0.00 sec)
+
+```
+
+```mysql
+索引上的等值查询(普通索引),向右遍历时最后一个值不满足查询需求时,next-key lock退化为间隙锁。
+-- 在客户端1
+mysql> select*from stu;
++-------+-----------+--------+-----------+--------------------+
+| stuid | stuname   | stuage | stugender | email              |
++-------+-----------+--------+-----------+--------------------+
+|     1 | 李隆基    |     17 | 女        | NULL                |
+|     2 | 张无忌    |     18 | 男        | NULL                |
+|     4 | 赵敏      |     20 | 女        | NULL               |
+|     5 | 小昭      |     21 | 女        | NULL               |
+|     6 | 杨道      |     22 | 男        | NULL               |
+|     7 | 张道灰    |     23 | 男        | zhangdaoshi@qq.com |
+|     8 | 黛绮丝    |     24 | 女        | NULL               |
+|     9 | 范凉凉    |     25 | 女        | NULL               |
+|    10 | 陈友谅    |     26 | 男        | NULL               |
+|    11 | 张士诚    |     27 | 男        | NULL               |
+|    12 | 常遇春    |     28 | 男        | NULL               |
+|    13 | 张三丰    |     29 | 男        | NULL               |
+|    14 | 灭绝      |     30 | 女        | NULL               |
+|    15 | 胡青牛    |     31 | 男        | NULL               |
+|    16 | 周芷若    |     32 | 女        | NULL               |
++-------+-----------+--------+-----------+--------------------+
+15 rows in set (0.00 sec)
+
+mysql> begin;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> select*from stu where stuage=18 lock in share mode;
++-------+-----------+--------+-----------+-------+
+| stuid | stuname   | stuage | stugender | email |
++-------+-----------+--------+-----------+-------+
+|     2 | 张无忌    |     18 | 男        | NULL  |
++-------+-----------+--------+-----------+-------+
+1 row in set (0.00 sec)
+-- 在客户端2
+mysql> select object_schema,object_name,index_name,lock_type,lock_mode,lock_data from performance_schema.data_locks;
++---------------+-------------+----------------+-----------+---------------+-----------+
+| object_schema | object_name | index_name     | lock_type | lock_mode     | lock_data |
++---------------+-------------+----------------+-----------+---------------+-----------+
+| learnerx      | stu         | NULL           | TABLE     | IS            | NULL      |
+| learnerx      | stu         | idx_stu_stuage | RECORD    | S             | 18, 2     |
+| learnerx      | stu         | PRIMARY        | RECORD    | S,REC_NOT_GAP | 2         |
+| learnerx      | stu         | idx_stu_stuage | RECORD    | S,GAP         | 20, 4     |
++---------------+-------------+----------------+-----------+---------------+-----------+
+
+```
+
+```mysql
+索引上的范围查询(唯一索引) --会访问到不满足条件的第一个值为止。
+-- 在客户端1
+mysql> select*from stu;
++-------+-----------+--------+-----------+--------------------+
+| stuid | stuname   | stuage | stugender | email              |
++-------+-----------+--------+-----------+--------------------+
+|     1 | 李隆基    |     17 | 女        | NULL               |
+|     2 | 张无忌    |     18 | 男        | NULL               |
+|     4 | 赵敏      |     20 | 女        | NULL               |
+|     5 | 小昭      |     21 | 女        | NULL               |
+|     6 | 杨道      |     22 | 男        | NULL               |
+|     7 | 张道灰    |     23 | 男        | zhangdaoshi@qq.com |
+|     8 | 黛绮丝    |     24 | 女        | NULL               |
+|     9 | 范凉凉    |     25 | 女        | NULL               |
+|    10 | 陈友谅    |     26 | 男        | NULL               |
+|    11 | 张士诚    |     27 | 男        | NULL               |
+|    12 | 常遇春    |     28 | 男        | NULL               |
+|    13 | 张三丰    |     29 | 男        | NULL               |
+|    14 | 灭绝      |     30 | 女        | NULL               |
+|    15 | 胡青牛    |     31 | 男        | NULL               |
+|    16 | 周芷若    |     32 | 女        | NULL               |
++-------+-----------+--------+-----------+--------------------+
+15 rows in set (0.00 sec)
+
+mysql> begin;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> select*from stu where stuid>=15 lock in share mode;
++-------+-----------+--------+-----------+-------+
+| stuid | stuname   | stuage | stugender | email |
++-------+-----------+--------+-----------+-------+
+|    15 | 胡青牛    |     31 | 男        | NULL  |
+|    16 | 周芷若    |     32 | 女        | NULL  |
++-------+-----------+--------+-----------+-------+
+2 rows in set (0.00 sec)
+-- 在客户端2
+mysql> select object_schema,object_name,index_name,lock_type,lock_mode,lock_data from performance_schema.data_locks;
++---------------+-------------+------------+-----------+---------------+------------------------+
+| object_schema | object_name | index_name | lock_type | lock_mode     | lock_data              |
++---------------+-------------+------------+-----------+---------------+------------------------+
+| learnerx      | stu         | NULL       | TABLE     | IS            | NULL                   |
+| learnerx      | stu         | PRIMARY    | RECORD    | S,REC_NOT_GAP | 15                     |
+| learnerx      | stu         | PRIMARY    | RECORD    | S             | supremum pseudo-record |
+| learnerx      | stu         | PRIMARY    | RECORD    | S             | 16                     |
++---------------+-------------+------------+-----------+---------------+------------------------+
+4 rows in set (0.00 sec)
+```
+
+# InnoDB存储引擎
+## 逻辑存储结构
+![[Pasted image 20240801131851.png]]
+
+#### 表空间:
+表空间(ibd文件),一个mysql实例可以对应多个表空间,用于存储记录、索引等数据。
+```c
+root@xukur-virtual-machine:/home/xukur# cd /var/lib/mysql
+root@xukur-virtual-machine:/var/lib/mysql# ll
+-rw-r-----  1 mysql mysql 27262976  7月 31 20:01  'mysql.ibd'
+'每一个文件都是ibd表空间文件'
+root@xukur-virtual-machine:/var/lib/mysql# cd learnerx/
+root@xukur-virtual-machine:/var/lib/mysql/learnerx# ll
+drwxr-x---  2 mysql mysql   4096  7月 24 19:39 ./
+drwx------ 10 mysql mysql   4096  8月  1 00:00 ../
+-rw-r-----  1 mysql mysql 114688  7月 29 03:41 account.ibd
+-rw-r-----  1 mysql mysql 114688  7月 24 19:39 bmxx.ibd
+-rw-r-----  1 mysql mysql 114688  7月 24 19:39 characters.ibd
+```
+#### 段:
+分为数据段(Leaf node segment)、索引段(Non-leaf node segment)、回滚段(Rollback segment),
+InnoDB是索引组织表,数据段就是B+树的叶子节点,索引段即为B+树的非叶子节点。段用来管理多个Extent(区)。
+#### 区:
+表空间的单元结构,每个区的大小为1M。默认情况下,InnoDB存储引擎页大小为16K,即一个区中一共有64个连续的页。
+#### 页:
+是InnoDB存储引擎磁盘管理的最小单元,每个页的大小默认为16KB。为了保证页的连续性,InnoDB存储引擎每次从
+磁盘申请4-5个区。
+#### 行：
+行,InnoDB存储引擎数据是按行进行存放的。
+#### Trx_id: 
+每次对某条记录进行改动时,都会把对应的事务id赋值给trx_id隐藏列。
+#### Roll_pointer:
+每次对某条引记录进行改动时,都会把旧的版本写入到undo日志中,然后这个隐藏列就相当于一个指针,可以通过它来找到该记录修改前的信息。
+
+## **架构**
+MySQL5.5版本开始,默认使用InnoDB存储引擎,它擅长事务处理,具有崩溃恢复特性,在日常开发中使用非常广泛。下面是InnoDB架构图,左侧为内存结构,右
+侧为磁盘结构。
+![[Pasted image 20240801132035.png]]
+
+### 架构--内存结构
+#### Buffer Pool:
+缓冲池是主内存中的一个区域,里面可以缓存磁盘上经常操作的真实数据,在执行增删改查操作时,
+先操作缓冲池中的数据(若缓冲池没有数据,则从磁盘加载并缓存),然后再以一定频率刷新到磁盘,
+从而减少磁盘I0,加快处理速度。
+
+
+缓冲池以Page页为单位、底层采用链表数据结构管理Page。根据状态,将Page分为三种类型:
+##### · free page: 
+空闲page,未被使用。
+##### · clean page:
+被使用page,数据没有被修改过。
+##### · dirty page:
+脏页,被使用page,数据被修改过,也中数据与磁盘的数据产生了不一致。
+
+
+#### Change Buffer:
+更改缓冲区(针对于非唯一二级索引页),在执行DML语句时,如果这些数据Page没有在Buffer Pool中,
+不会直接操作磁盘,而会将数据变更存在更改缓冲区Change Buffer中,在未来数据被读取时,
+再将数据合并恢复到Buffer Pool中,再将合并后的数据刷新到磁盘中。
+
+##### Change Buffer的意义是什么?
+与聚集索引不同,二级索引通常是非唯一的,并且以相对随机的顺序插入二级索引。同样,删除和更
+新可能会影响索引树中不相邻的二级索引页,如果每一次都操作磁盘,会造成大量的磁盘IO。有了
+ChangeBuffer之后,我们可以在缓冲池中进行合并处理,减少磁盘IO。
+![[Pasted image 20240801133534.png]]
+
+#### Adaptive Hash Index:
+自适应hash索引,用于优化对Buffer Pool数据的查询。InnoDB存储引擎会监控对表上各索引页的查询,
+如果观察到hash索引可以提升速度,则建立hash索引,称之为自适应hash索引。
+###### 自适应哈希索引,无需人工干预,是系统根据情况自动完成。
+###### 参数:adaptive_hash_index
+```mysql
+mysql> show variables like'%hash_index%';
++----------------------------------+-------+
+| Variable_name                    | Value |
++----------------------------------+-------+
+| innodb_adaptive_hash_index       | ON    |
+| innodb_adaptive_hash_index_parts | 8     |
++----------------------------------+-------+
+2 rows in set (0.00 sec)
+
+```
+#### Log Buffer:
+日志缓冲区,用来保存要写入到磁盘中的log日志数据(redo log、undo log),默认大小为16MB,
+日志缓冲区的日志会定期刷新到磁盘中。如果需要更新、插入或删除许多行的事务,
+增加日志缓冲区的大小可以节省磁盘I/0。
+参数:
+###### innodb_log_buffer_size: 缓冲区大小
+###### innodb_flush_log_at_trx_commit:日志刷新到磁盘时机
+1:日志在每次事务提交时写入并刷新到磁盘。
+0:每秒将日志写入并刷新到磁盘一次。
+2:日志在每次事务提交后写入,并每秒刷新到磁盘一次。
+```mysql
+mysql> show variables like '%flush_log%';
++--------------------------------+-------+
+| Variable_name                  | Value |
++--------------------------------+-------+
+| innodb_flush_log_at_timeout    | 1     |
+| innodb_flush_log_at_trx_commit | 1     |
++--------------------------------+-------+
+2 rows in set (0.01 sec)
+
+mysql> show variables like '%innodb_log_buffer_size%';
++------------------------+----------+
+| Variable_name          | Value    |
++------------------------+----------+
+| innodb_log_buffer_size | 16777216 |
++------------------------+----------+
+1 row in set (0.01 sec)
+```
+
+### 架构--磁盘结构
+#### System Tablespace:
+系统表空间是更改缓冲区的存储区域。如果表是在系统表空间而不是每个表
+文件或通用表空间中创建的,它也可能包含表和索引数据。(在MySQL5.x版本中还包含InnoDB数据字典、undolog等)
+###### 参数:innodb_data_file_path
+```mysql
+mysql> show variables like '%data_file_path%';
++----------------------------+------------------------+
+| Variable_name              | Value                  |
++----------------------------+------------------------+
+| innodb_data_file_path      | ibdata1:12M:autoextend |
+| innodb_temp_data_file_path | ibtmp1:12M:autoextend  |
++----------------------------+------------------------+
+2 rows in set (0.00 sec)
+```
+#### File-Per-Table Tablespaces:
+每个表的文件表空间包含单个InnoDB表的数据和索引,并存储在文件系统上的单个数据文件中。
+###### 参数:innodb_file_per_table
+```mysql
+mysql> show variables like '%file_per_table%';
++-----------------------+-------+
+| Variable_name         | Value |
++-----------------------+-------+
+| innodb_file_per_table | ON    |
++-----------------------+-------+
+1 row in set (0.00 sec)
+'开启就说明对每一个表生成表空间文件'
+```
+#### General Tablespaces:
+通用表空间,需要通过CREATE TABLESPACE语法创建通用表空间,
+在创建表时,可以指定该表空间。
+```mysql
+CREATE TABLESPACE xxxx ADD DATAFILE 'file_name'
+ENGINE = engine_name;
+```
+#### Undo Tablespaces:
+撇销表空间,MySQL实例在初始化时会自动创建两个默认的undo表空间(初始大小
+16M),用于存储undo log日志。
+
+#### Temporary Tablespaces: 
+InnoDB 使用会话临时表空间和全局临时表空间。存储用户创建的临时表等数据。
+
+#### Doublewrite Buffer Files:
+双写缓冲区,innoDB引擎将数据页从Buffer Pool刷新到磁盘前,先
+将数据页写入双写缓冲区文件中,便于系统异常时恢复数据。
+涉及两个文件:
+ib_16384_0.dblwr
+ib_16384_1.dblwr
+
+#### Redo Log:
+重做日志,是用来实现事务的持久性。该日志文件由两部分组成:
+重做日志缓冲(redo log buffer)以及重做日志文件(redo log),前者是在内存中,后者在磁盘中。
+当事务提交之后会把所有修改信息都会存到该日志中,用于在刷新脏页到磁盘时,发生错误时,进行数据恢复使用。
+以循环方式写入重做日志文件,涉及两个文件:
+ib_logfile0
+ib_logfile1
+
+### 架构--后台线程
+#### Master Thread
+核心后台线程,负责调度其他线程,还负责将缓冲池中的数据异步刷新到磁盘中,保持数据的一致性,
+还包括脏页的刷新、合并插入缓存、undo页的回收。
+#### IO Thread
+在InnoDB存储引擎中大量使用了AIO来处理IO请求,这样可以极大地提高数据库的性能,而IO
+Thread主要负责这些IO请求的回调。
+![[Pasted image 20240804180632.png]]
+```mysql
+ show engine innodb status;
+ 
+FILE I/O
+--------
+I/O thread 0 state: waiting for completed aio requests (insert buffer thread)
+I/O thread 1 state: waiting for completed aio requests (read thread)
+I/O thread 2 state: waiting for completed aio requests (read thread)
+I/O thread 3 state: waiting for completed aio requests (read thread)
+I/O thread 4 state: waiting for completed aio requests (read thread)
+I/O thread 5 state: waiting for completed aio requests (write thread)
+I/O thread 6 state: waiting for completed aio requests (write thread)
+I/O thread 7 state: waiting for completed aio requests (write thread)
+I/O thread 8 state: waiting for completed aio requests (write thread)
+Pending normal aio reads: [0, 0, 0, 0] , aio writes: [0, 0, 0, 0] ,
+ ibuf aio reads:
+Pending flushes (fsync) log: 0; buffer pool: 0
+1566 OS file reads, 418 OS file writes, 217 OS fsyncs
+0.00 reads/s, 0 avg bytes/read, 0.00 writes/s, 0.00 fsyncs/s
+
+```
+#### Purge Thread
+主要用于回收事务已经提交了的undo log,在事务提交之后,undo log可能不用了,就用它来回收。
+#### Page Cleaner Thread
+协助Master Thread刷新脏页到磁盘的线程,它可以减轻Master Thread的工作压力,减少阻塞。
+
+## 事务原理
+### 事务
+事务 是一组操作的集合,它是一个不可分割的工作单位,事务会把所有的操作作为一个整体一起向系统提交或撤销操作请求,
+即这些操作要么同时成功,要么同时失败。
+### 事务原理特性
+原子性(Atomicity):事务是不可分割的最小操作单元,要么全部成功,要么全部失败。
+一致性(Consistency):事务完成时,必须使所有的数据都保持一致状态。
+隔离性(isolation):数据库系统提供的隔离机制,保证事务在不受外部并发操作影响的独立环境下运行。
+持久性(Durability):事务一旦提交或回滚,它对数据库中的数据的改变就是永久的。
+![[Pasted image 20240804204857.png]]
+##### 想要保证事物的原子性，一致性，持久性 可以通过redo log & undo log日志机制操作就可以保证。
+![[Pasted image 20240804205133.png]]
+##### 如果要保证事物的隔离性要通过锁和MVCC来机制（多版本并发控制）来实现
+### redo log 
+重做日志,记录的是事务提交时数据页的物理修改,是用来实现事务的持久性。当事务提交之后会把所有修改信息都存到该日志文件中,用于在刷新脏页到磁盘,发生错误时,进行数据恢复使用。
+该日志文件由两部分组成:
+#### 重做日志缓冲(redo log buffer) 在内存中
+#### 重做日志文件(redo log file),在磁盘中。
+### undo log
+回滚日志,用于记录数据被修改前的信息,作用包含两个:提供回滚和MVCC(多版本并发控制)。
+undo log和redo log记录物理日志不一样,它是逻辑日志。可以认为当delete一条记录时,undo log中会记录一条对应的insert记录,
+反之亦然,当update一条记录时,它记录一条对应相反的update记录。当执行rollback时,就可以从undo log中的逻辑记录读取到相应的内容并进行回滚。
+Undo log销毁:undo log在事务执行时产生,事务提交时,并不会立即删除undo log,因为这些日志可能还用于MVCC。
+Undo log存储:undo log采用段的方式进行管理和记录,存放在前面介绍的rollback segment回滚段中,内部包含1024个undo log segment 。
+## MVCC(多版本并发控制)
 
